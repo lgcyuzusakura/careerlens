@@ -1,0 +1,57 @@
+name: v0.1 CI
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: v01-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  full-stack:
+    name: Docker tests and integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_IMAGE: node:24.11.0-alpine
+      NGINX_IMAGE: nginx:1.28.0-alpine
+      MAVEN_IMAGE: maven:3.9.11-eclipse-temurin-21
+      JRE_IMAGE: eclipse-temurin:21.0.9_10-jre-alpine
+      PYTHON_IMAGE: python:3.11.14-slim-bookworm
+      NPM_REGISTRY: https://registry.npmjs.org
+      PIP_INDEX_URL: https://pypi.org/simple
+      RELEASE_TAG: ci-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check docs, privacy and Compose
+        run: |
+          python3 scripts/check_docs.py
+          docker compose config -q
+      - name: Build four images and execute unit tests in Docker
+        run: docker compose build
+      - name: Start and verify the real HTTP chain
+        run: |
+          docker compose up -d --no-build --wait --wait-timeout 120
+          python3 scripts/smoke.py
+      - name: Browser acceptance
+        run: |
+          python3 -m venv /tmp/careerlens-browser
+          /tmp/careerlens-browser/bin/pip install playwright==1.56.0
+          /tmp/careerlens-browser/bin/python -m playwright install --with-deps chromium
+          /tmp/careerlens-browser/bin/python tests/e2e/browser.py
+      - name: Verify compatible model protocol using synthetic gateway
+        run: |
+          docker compose -f compose.yaml -f compose.test.yaml up -d --no-build --force-recreate --wait --wait-timeout 120
+          EXPECTED_EXTERNAL_MODE=llm python3 scripts/smoke.py
+      - name: Diagnose failures without material bodies
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --tail=80
+      - name: Stop test containers, retain images
+        if: always()
+        run: docker compose -f compose.yaml -f compose.test.yaml down

@@ -1,0 +1,520 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "const": "analysis-v1"
+    },
+    "ruleVersion": {
+      "type": "string",
+      "const": "skill-coverage-v1"
+    },
+    "skillDictionaryVersion": {
+      "type": "string",
+      "const": "skills-v1"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "rules",
+        "llm",
+        "degraded"
+      ]
+    },
+    "warnings": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "msg": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "evidenceIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "msg"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "structuredResume": {
+      "type": "object",
+      "properties": {
+        "headline": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "education": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "evidenceIds": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8
+                }
+              }
+            },
+            "required": [
+              "title",
+              "summary",
+              "evidenceIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "experience": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "evidenceIds": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8
+                }
+              }
+            },
+            "required": [
+              "title",
+              "summary",
+              "evidenceIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "projects": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "evidenceIds": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8
+                }
+              }
+            },
+            "required": [
+              "title",
+              "summary",
+              "evidenceIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "skills": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skillId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "displayName": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "rawMentions": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidenceIds": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8
+                }
+              }
+            },
+            "required": [
+              "skillId",
+              "displayName",
+              "rawMentions",
+              "evidenceIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "unmappedSkills": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "issues": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "msg": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "evidenceIds": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "code",
+              "msg"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "headline",
+        "education",
+        "experience",
+        "projects",
+        "skills",
+        "unmappedSkills",
+        "issues"
+      ],
+      "additionalProperties": false
+    },
+    "requirements": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skillId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "required",
+              "unspecified",
+              "preferred"
+            ]
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "evidenceIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            }
+          }
+        },
+        "required": [
+          "skillId",
+          "displayName",
+          "priority",
+          "weight",
+          "evidenceIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "matches": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skillId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "resumeEvidenceIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            }
+          },
+          "jdEvidenceIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            }
+          }
+        },
+        "required": [
+          "skillId",
+          "displayName",
+          "resumeEvidenceIds",
+          "jdEvidenceIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "gaps": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skillId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "required",
+              "unspecified",
+              "preferred"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "suggestion": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "jdEvidenceIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            }
+          }
+        },
+        "required": [
+          "skillId",
+          "displayName",
+          "priority",
+          "reason",
+          "suggestion",
+          "jdEvidenceIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "score": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matchedWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "totalWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "WEIGHTED_SKILL_COVERAGE",
+            "NO_RECOGNIZED_REQUIREMENTS"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "matchedWeight",
+        "totalWeight",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 8
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "resume",
+              "jd"
+            ]
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "line",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "contractVersion",
+    "ruleVersion",
+    "skillDictionaryVersion",
+    "mode",
+    "warnings",
+    "structuredResume",
+    "requirements",
+    "matches",
+    "gaps",
+    "score",
+    "evidence"
+  ],
+  "additionalProperties": false
+}
