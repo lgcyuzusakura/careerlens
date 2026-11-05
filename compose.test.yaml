@@ -1,0 +1,18 @@
+services:
+  model-gateway:
+    image: careerlens-ai:${RELEASE_TAG:-v0.1-dev}
+    command: ["python", "-m", "tests.model_gateway"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8099/healthz',timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: "no"
+  ai-service:
+    environment:
+      OPENAI_API_KEY: synthetic-test-only
+      OPENAI_BASE_URL: http://model-gateway:8099/v1
+      OPENAI_MODEL: synthetic-fixture
+      ALLOW_HTTP_MODEL: "true"
+    depends_on:
+      model-gateway: {condition: service_healthy}

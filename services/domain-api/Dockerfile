@@ -1,10 +1,11 @@
 ARG MAVEN_IMAGE=m.daocloud.io/docker.io/library/maven:3.9.11-eclipse-temurin-21
 ARG JRE_IMAGE=m.daocloud.io/docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine
 FROM ${MAVEN_IMAGE} AS build
-WORKDIR /workspace
+WORKDIR /workspace/services/domain-api
 COPY services/domain-api/pom.xml services/domain-api/settings.xml ./
 RUN mvn -B -s settings.xml dependency:go-offline -q
 COPY services/domain-api/src src
+COPY config /workspace/config
 RUN mvn -B -s settings.xml verify -q
 FROM ${JRE_IMAGE} AS runtime
 WORKDIR /app

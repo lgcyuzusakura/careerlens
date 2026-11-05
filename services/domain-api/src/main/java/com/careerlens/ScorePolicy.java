@@ -25,12 +25,14 @@ public class ScorePolicy {
             }
             var skills = new LinkedHashMap<String,Skill>();
             for (var skill : resume.skills()) {
+                check(SkillDictionary.NAMES.containsKey(skill.skillId()) && SkillDictionary.NAMES.get(skill.skillId()).equals(skill.displayName()));
                 check(skill.skillId() != null && skill.displayName() != null && skill.evidenceIds() != null && !skill.evidenceIds().isEmpty());
                 for (String id : skill.evidenceIds()) check(evidence.containsKey(id) && evidence.get(id).source().equals("resume"));
                 skills.merge(skill.skillId(), skill, (a,b) -> new Skill(a.skillId(), a.displayName(), a.rawMentions(), java.util.stream.Stream.concat(a.evidenceIds().stream(), b.evidenceIds().stream()).distinct().toList()));
             }
             var requirements = new LinkedHashMap<String,Requirement>();
             for (var req : source.requirements()) {
+                check(SkillDictionary.NAMES.containsKey(req.skillId()) && SkillDictionary.NAMES.get(req.skillId()).equals(req.displayName()));
                 check(req.skillId() != null && req.displayName() != null && req.evidenceIds() != null && !req.evidenceIds().isEmpty());
                 for (String id : req.evidenceIds()) check(evidence.containsKey(id) && evidence.get(id).source().equals("jd"));
                 weight(req.priority());

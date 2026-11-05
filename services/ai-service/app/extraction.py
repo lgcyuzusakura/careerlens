@@ -73,6 +73,8 @@ def rules(evidence: list[Evidence], mode="rules", warning=None) -> Extraction:
             raw = list(dict.fromkeys(match.group() for _, matches in resume_hits for match in matches))[:20]
             resume.skills.append(Skill(skillId=skill_id, displayName=item["name"], rawMentions=raw, evidenceIds=[line.id for line, _ in resume_hits][:100]))
         jd_hits = [(line, match) for line in evidence if line.source == "jd" for match in mentions(skill_id, line.text)]
+        if skill_id == "vue":
+            jd_hits = [(line, match) for line, match in jd_hits if not mentions("vue2", line.text) and not mentions("vue3", line.text)]
         if jd_hits:
             weights = {"required": 3, "unspecified": 2, "preferred": 1}
             priority = max((priority_for(line.text, match) for line, match in jd_hits), key=weights.get)

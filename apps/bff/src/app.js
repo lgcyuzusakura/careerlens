@@ -2,6 +2,7 @@ import Fastify from 'fastify'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import { Agent, request } from 'undici'
+import { analysisSchema, templatesSchema } from './response-schema.js'
 
 const text = (min, max) => z.string().refine(s => {
   const n = Array.from(s.normalize('NFKC').trim()).length
@@ -30,13 +31,6 @@ export async function domainCall(path, { body, traceId, baseUrl, timeoutMs = 200
     chunks.push(chunk)
   }
   return { status: response.statusCode, payload: JSON.parse(Buffer.concat(chunks).toString('utf8')) }
-}
-
-function validAnalysis(data) {
-  return data && data.contractVersion === 'analysis-v1' && ['llm', 'rules', 'degraded'].includes(data.mode)
-    && ['requirements', 'matches', 'gaps', 'evidence', 'warnings'].every(k => Array.isArray(data[k]) && data[k].length <= 500)
-    && data.score && (data.score.value === null || Number.isInteger(data.score.value) && data.score.value >= 0 && data.score.value <= 100)
-    && data.structuredResume && ['education', 'experience', 'projects', 'skills', 'issues'].every(k => Array.isArray(data.structuredResume[k]))
 }
 
 export function buildApp({ call = domainCall, domainUrl = process.env.DOMAIN_URL || 'http://domain-api:8080', timeoutMs = 20000, rateLimit = 30 } = {}) {
@@ -70,8 +64,10 @@ export function buildApp({ call = domainCall, domainUrl = process.env.DOMAIN_URL
         const status = [400, 404, 422, 429, 503, 504].includes(response.status) ? response.status : 502
         return reply.code(status).send({ code: codes[status], msg: messages[status], data: null })
       }
-      if (!payload || payload.code !== 'OK' || typeof payload.msg !== 'string' || (kind === 'analysis' ? !validAnalysis(payload.data) : !Array.isArray(payload.data?.items))) throw new Error('Invalid upstream contract')
-      return { code: 'OK', msg: payload.msg, data: payload.data }
+      if (!payload || payload.code !== 'OK' || typeof payload.msg !== 'string') throw new Error('Invalid upstream envelope')
+      const parsed = (kind === 'analysis' ? analysisSchema : templatesSchema).safeParse(payload.data)
+      if (!parsed.success) throw new Error('Invalid upstream contract')
+      return { code: 'OK', msg: payload.msg, data: parsed.data }
     } catch (error) {
       const status = ['TimeoutError', 'AbortError'].includes(error.name) || /TIMEOUT/.test(error.code || '') ? 504 : 502
       return reply.code(status).send({ code: codes[status], msg: messages[status], data: null })

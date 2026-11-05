@@ -1,0 +1,43 @@
+name: Release images
+on:
+  workflow_run:
+    workflows: ['v0.1 CI']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      NODE_IMAGE: node:24.11.0-alpine
+      NGINX_IMAGE: nginx:1.28.0-alpine
+      MAVEN_IMAGE: maven:3.9.11-eclipse-temurin-21
+      JRE_IMAGE: eclipse-temurin:21.0.9_10-jre-alpine
+      PYTHON_IMAGE: python:3.11.14-slim-bookworm
+      NPM_REGISTRY: https://registry.npmjs.org
+      PIP_INDEX_URL: https://pypi.org/simple
+      RELEASE_TAG: ${{ github.event.workflow_run.head_sha }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Build verified revision and publish immutable tags
+        run: |
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker compose build
+          for service in web bff java ai; do
+            target="ghcr.io/${GITHUB_REPOSITORY,,}/$service:$RELEASE_TAG"
+            docker tag "careerlens-$service:$RELEASE_TAG" "$target"
+            docker push "$target"
+          done
+      - name: Remove registry login, retain release images
+        if: always()
+        run: docker logout ghcr.io
