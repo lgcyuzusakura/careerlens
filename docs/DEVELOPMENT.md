@@ -85,7 +85,7 @@ MVP 无主数据库。岗位模板是 Java 内置、版本化的合成内容；�
 
 ## 5. 代码编排
 
-以下为目标结构，文件尚待对应增量建立，不表示当前已存在：
+以下为 v0.1 已落地的目录结构（本段最初写于设计阶段，当时文件尚未建立；现已按此结构实现）：
 
 ```text
 careerlens/
@@ -266,7 +266,7 @@ Python 设置并发信号量与有界等待；无法入队返回 429 与 Retry-A
 
 四个多阶段 Dockerfile。Node 构建使用 npm ci；Java Maven 构建后只带 JRE 与 Jar；Python 仅安装锁定运行依赖。非 root 用户运行，健康检查使用容器中实际存在的工具，设置 restart 与适当内存上限。
 
-主要构建和验证路径使用 Docker，不依赖宿主机预装 JDK、Maven、Python。国内源采用构建参数：JDK/JRE、Maven、Node、Python、静态服务分别指定镜像，候选使用 `m.daocloud.io/docker.io/library/*`，实际 manifest 可拉取且 digest 核验后才能落锁。源不可达时明确失败或由运行配置切换，不静默引入不同镜像版本。npm/Maven/PyPI 源也配置为受控参数，TLS 校验保持开启；首次依赖锁生成和镜像拉取都记录实际来源。当前仅为源策略设计，尚未拉取验证。
+主要构建和验证路径使用 Docker，不依赖宿主机预装 JDK、Maven、Python。国内源采用构建参数：JDK/JRE、Maven、Node、Python、静态服务分别指定镜像，候选使用 `m.daocloud.io/docker.io/library/*`，实际 manifest 可拉取且 digest 核验后才能落锁。源不可达时明确失败或由运行配置切换，不静默引入不同镜像版本。npm/Maven/PyPI 源也配置为受控参数，TLS 校验保持开启；首次依赖锁生成和镜像拉取都记录实际来源。本段为 21:xx 的源策略设计记录；后续基础镜像已实际拉取并在 `compose.yaml` 中锁定 manifest digest，Node OCI 下载停滞时另有应急构建入口 `docker/node-base.Dockerfile`。实际拉取、构建与验证状态以 `DELIVERY.md` 第 0 节为准，不把设计段落当成当前状态。
 
 Compose 网络上使用 `bff:8081`、`domain-api:8080`、`ai-service:8082` 服务名；不使用 localhost 指向其他容器。按用户要求发布四个本机调试端口，绑定 127.0.0.1；前端 /api 代理到 BFF，浏览器业务仍只能同源访问 BFF，内部端口用于 Postman/curl 调试。对外部署 profile 应关闭内部宿主端口。
 

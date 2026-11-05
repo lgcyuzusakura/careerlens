@@ -1,22 +1,51 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { ScanLine, ArrowRight, Trash2, Download, Copy, Check, FileText, Link2, X, ChevronRight, AlertTriangle, LoaderCircle } from 'lucide-vue-next'
-import { api, countCharacters, validate } from './api.js'
+import { ScanLine, ArrowRight, Trash2, Download, Copy, Check, FileText, Link2, X, ChevronRight, AlertTriangle, LoaderCircle, Upload, LogOut, Wallet, ShieldCheck } from 'lucide-vue-next'
+import { api, countCharacters, validate, sessionToken, setSession } from './api.js'
+import AuthPanel from './AuthPanel.vue'
+import AccountPanel from './AccountPanel.vue'
+import AdminPanel from './AdminPanel.vue'
+import { samples } from './samples.js'
 
 const resume = ref(''), jd = ref(''), external = ref(false), templates = ref([]), selectedTemplate = ref('')
 const result = ref(null), trace = ref(''), error = ref(''), fields = ref({}), loading = ref(false), tab = ref('match'), selectedEvidence = ref(''), copied = ref(false)
 let controller, generation = 0, analyzedInput = ''
+const user = ref(null), restoring = ref(!!sessionToken()), view = ref('workbench'), sampleIndex = ref(0), importing = ref(''), importNotice = ref('')
+let uploadController, uploadGeneration=0
 const snapshot = () => JSON.stringify([resume.value, jd.value, external.value])
 const stale = computed(() => result.value && snapshot() !== analyzedInput)
 const evidence = computed(() => result.value?.evidence || [])
 const modeLabel = computed(() => ({ rules: '规则提取', degraded: '降级提取', llm: '模型提取' }[result.value?.mode] || ''))
-onMounted(async () => { try { templates.value = (await api('/api/v1/job-templates')).data.items } catch { /* Manual JD remains usable. */ } })
-onBeforeUnmount(() => controller?.abort())
+onMounted(async () => {
+  window.addEventListener('careerlens-session-expired', logout)
+  try { templates.value = (await api('/api/v1/job-templates')).data.items } catch { /* Manual JD remains usable. */ }
+  try { if (sessionToken()) user.value = (await api('/api/v1/account')).data.user } catch (cause) { if (cause.status===401) setSession(''); else error.value=cause.message } finally { restoring.value=false }
+})
+onBeforeUnmount(() => { controller?.abort(); uploadController?.abort(); window.removeEventListener('careerlens-session-expired', logout) })
+function login(value) { user.value=value; view.value='workbench'; error.value='' }
+function logout() { cancel(); uploadGeneration++; uploadController?.abort(); importing.value=''; setSession(''); user.value=null; resume.value='';jd.value='';result.value=null; error.value=''; view.value='workbench'; importNotice.value='' }
+async function refreshUser() { try { user.value=(await api('/api/v1/account')).data.user } catch (cause) { error.value=cause.message } }
+async function upload(event,target) {
+  const file=event.target.files?.[0]; event.target.value=''; if (!file) return
+  if (file.size>2097152 || !/\.(txt|md|pdf|docx)$/i.test(file.name)) { error.value='支持 MD、TXT、PDF、DOCX，文件最多 2 MiB。'; return }
+  if ((target==='resume'?resume.value:jd.value) && !window.confirm('导入文件会替换当前文本，是否继续？')) return
+  uploadController?.abort(); uploadController=new AbortController(); const current=++uploadGeneration
+  importing.value=target; error.value=''; importNotice.value=''
+  const form=new FormData(); form.append('target',target); form.append('file',file)
+  const timer=setTimeout(()=>uploadController?.abort(),15000)
+  try {
+    const {data}=await api('/api/v1/documents/text',{body:form,signal:uploadController.signal})
+    if (current!==uploadGeneration) return
+    if(target==='resume') resume.value=data.text; else jd.value=data.text
+    importNotice.value=`已导入 ${data.filename}（${data.charCount} 字符），请核对提取文本。`
+  } catch(cause) { if(current===uploadGeneration) error.value=cause.name==='AbortError'?'文件解析超时，请重试或粘贴文本。':cause.message }
+  finally {clearTimeout(timer);if(current===uploadGeneration) importing.value=''}
+}
 function sample() {
   if ((resume.value || jd.value) && !window.confirm('载入虚构示例会替换当前材料，是否继续？')) return
   cancel(); result.value = null; error.value = ''; fields.value = {}
-  resume.value = '教育背景\n某示例大学 计算机科学 本科\n项目经历\n课程管理平台：使用 Java、Spring Boot 和 MySQL 实现 REST API，使用 JUnit 编写单元测试。\n技能\n熟悉 Java、SQL、Git 和 Vue 3，使用 Docker 部署课程项目。'
-  jd.value = 'Java 校招开发（虚构示例）\n必须熟悉 Java、Spring Boot 和 SQL。\n掌握 Redis，了解 Git；Docker 和 Kubernetes 经验优先。'
+  resume.value = samples[sampleIndex.value].resume
+  jd.value = samples[sampleIndex.value].jd
 }
 function chooseTemplate() {
   const item = templates.value.find(x => x.id === selectedTemplate.value)
@@ -32,7 +61,7 @@ async function analyze() {
   fields.value = validate(resume.value, jd.value); error.value = ''
   if (Object.keys(fields.value).length) return
   cancel(); const current = ++generation; controller = new AbortController(); loading.value = true
-  const input = snapshot(); const timeout = setTimeout(() => controller?.abort('timeout'), 25000)
+  const input = snapshot(); const timeout = setTimeout(() => controller?.abort('timeout'), 48000)
   try {
     const response = await api('/api/v1/analyses', { body: { resumeText: resume.value, jdText: jd.value, options: { useExternalModel: external.value } }, signal: controller.signal })
     if (current !== generation) return
@@ -41,7 +70,7 @@ async function analyze() {
     if (current !== generation) return
     error.value = controller.signal.aborted ? '分析超时，材料已保留。请稍后重试。' : cause.message
     trace.value = cause.traceId || ''; for (const item of cause.fields || []) fields.value[item.field] = item.msg
-  } finally { clearTimeout(timeout); if (current === generation) loading.value = false }
+  } finally { clearTimeout(timeout); if (current === generation) { loading.value = false; await refreshUser() } }
 }
 function locate(ids) {
   selectedEvidence.value = ids?.[0] || ''
@@ -56,13 +85,19 @@ async function copyTrace() { try { await navigator.clipboard.writeText(trace.val
 
 <template>
   <div class="app-shell">
-    <header class="topbar"><a href="/" class="brand"><ScanLine :size="26" /><strong>CareerLens</strong><span>简历岗位分析</span></a><span class="version">v0.1</span></header>
+    <header class="topbar"><a href="/" class="brand"><ScanLine :size="26" /><strong>CareerLens</strong><span>简历岗位分析</span></a><nav v-if="user" class="app-nav" aria-label="主导航"><button :class="{active:view==='workbench'}" @click="view='workbench'"><ScanLine :size="16" /><span>工作台</span></button><button :class="{active:view==='account'}" @click="view='account'"><Wallet :size="16" /><span>账户 · {{ user.credits }} 次</span></button><button v-if="user.role==='ADMIN'" :class="{active:view==='admin'}" @click="view='admin'"><ShieldCheck :size="16" /><span>管理后台</span></button><button class="icon-button" title="退出登录" aria-label="退出登录" @click="logout"><LogOut :size="17" /></button></nav><span v-else class="version">v0.2</span></header>
     <main>
-      <section class="page-heading"><div><h1>让每一项匹配，都有依据。</h1><p>对照岗位要求，查看简历中的已有证据与待补充项。</p></div><button class="quiet" @click="sample"><FileText :size="16" />载入虚构示例</button></section>
+      <p v-if="restoring" class="empty-state" role="status">正在恢复会话…</p>
+      <AuthPanel v-else-if="!user" @authenticated="login" />
+      <AccountPanel v-else-if="view==='account'" @updated="user=$event" />
+      <AdminPanel v-else-if="view==='admin' && user.role==='ADMIN'" />
+      <template v-else>
+      <section class="page-heading"><div><h1>让每一项匹配，都有依据。</h1><p>对照岗位要求，查看简历中的已有证据与待补充项。</p></div><div class="sample-controls"><select v-model="sampleIndex" aria-label="选择虚构简历示例"><option v-for="(s,i) in samples" :key="s.title" :value="i">{{ s.title }}</option></select><button class="quiet" @click="sample"><FileText :size="16" />载入虚构示例</button></div></section>
+      <p v-if="importNotice" class="notice" role="status">{{ importNotice }}</p>
       <form @submit.prevent="analyze" novalidate>
         <div class="input-grid">
-          <section class="input-section"><div class="field-heading"><label for="resume">简历文本</label><button type="button" class="icon-button" title="清空所有材料" aria-label="清空所有材料" @click="clear"><Trash2 :size="17" /></button></div><textarea id="resume" v-model="resume" placeholder="粘贴教育背景、项目经历和技能…" :aria-invalid="!!fields.resumeText" aria-describedby="resume-help" /><div id="resume-help" class="field-footer"><span class="field-error">{{ fields.resumeText || '材料仅在本次分析中使用' }}</span><span>{{ countCharacters(resume) }} / 20,000</span></div></section>
-          <section class="input-section"><div class="field-heading"><label for="jd">岗位 JD</label><select v-model="selectedTemplate" @change="chooseTemplate" aria-label="选择示例岗位"><option value="">选择示例岗位</option><option v-for="item in templates" :key="item.id" :value="item.id">{{ item.title }}</option></select></div><textarea id="jd" v-model="jd" placeholder="粘贴岗位职责、必需技能和加分项…" :aria-invalid="!!fields.jdText" aria-describedby="jd-help" /><div id="jd-help" class="field-footer"><span class="field-error">{{ fields.jdText || '保留具体技能与优先级描述' }}</span><span>{{ countCharacters(jd) }} / 12,000</span></div></section>
+          <section class="input-section"><div class="field-heading"><label for="resume">简历文本</label><div class="field-tools"><label class="upload-button" :class="{disabled:!!importing}" title="上传 MD、TXT、PDF 或 DOCX"><LoaderCircle v-if="importing==='resume'" class="spin" :size="16" /><Upload v-else :size="16" />上传简历<input type="file" aria-label="上传简历文件" accept=".md,.txt,.pdf,.docx" :disabled="!!importing" @change="upload($event,'resume')" /></label><button type="button" class="icon-button" title="清空所有材料" aria-label="清空所有材料" @click="clear"><Trash2 :size="17" /></button></div></div><textarea id="resume" v-model="resume" placeholder="粘贴教育背景、项目经历和技能…" :aria-invalid="!!fields.resumeText" aria-describedby="resume-help" /><div id="resume-help" class="field-footer"><span class="field-error">{{ fields.resumeText || '材料仅在本次分析中使用' }}</span><span>{{ countCharacters(resume) }} / 20,000</span></div></section>
+          <section class="input-section"><div class="field-heading"><label for="jd">岗位 JD</label><div class="field-tools"><select v-model="selectedTemplate" @change="chooseTemplate" aria-label="选择示例岗位"><option value="">示例岗位</option><option v-for="item in templates" :key="item.id" :value="item.id">{{ item.title }}</option></select><label class="upload-button" :class="{disabled:!!importing}" title="上传 MD、TXT、PDF 或 DOCX"><LoaderCircle v-if="importing==='jd'" class="spin" :size="16" /><Upload v-else :size="16" />上传 JD<input type="file" aria-label="上传岗位文件" accept=".md,.txt,.pdf,.docx" :disabled="!!importing" @change="upload($event,'jd')" /></label></div></div><textarea id="jd" v-model="jd" placeholder="粘贴岗位职责、必需技能和加分项…" :aria-invalid="!!fields.jdText" aria-describedby="jd-help" /><div id="jd-help" class="field-footer"><span class="field-error">{{ fields.jdText || '保留具体技能与优先级描述' }}</span><span>{{ countCharacters(jd) }} / 12,000</span></div></section>
         </div>
         <div class="action-bar"><div class="privacy-option"><label><input type="checkbox" v-model="external" />使用外部模型</label><small v-if="external">将向配置的模型发送尽力脱敏后的材料，脱敏可能不完整。</small><small v-else>当前使用本地规则提取，不向外部模型发送材料。</small></div><div class="commands"><button v-if="loading" type="button" class="quiet" @click="cancel"><X :size="16" />取消</button><button class="primary" type="submit" :disabled="loading"><LoaderCircle v-if="loading" :size="18" class="spin" /><ScanLine v-else :size="18" />{{ loading ? '分析中' : '分析匹配' }}<ArrowRight v-if="!loading" :size="17" /></button></div></div>
       </form>
@@ -82,6 +117,7 @@ async function copyTrace() { try { await navigator.clipboard.writeText(trace.val
         <div v-else class="all-evidence"><article v-for="line in evidence" :key="line.id" :class="{highlight:selectedEvidence===line.id}"><span>{{ line.id }} · {{ line.source==='resume'?'简历':'岗位' }}</span><p>{{ line.text }}</p></article></div>
         <footer class="result-footer"><span>{{ result.ruleVersion }} · {{ result.skillDictionaryVersion }}</span><button v-if="trace" class="trace-button" @click="copyTrace" :title="trace"><Check v-if="copied" :size="13" /><Copy v-else :size="13" />{{ copied?'已复制':'复制追踪号' }}</button></footer>
       </section>
+      </template>
     </main><footer class="page-footer">CareerLens <span>让经历可见，让差距可行动。</span></footer>
   </div>
 </template>

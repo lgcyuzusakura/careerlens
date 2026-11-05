@@ -13,9 +13,10 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_API_STYLE: ${OPENAI_API_STYLE:-chat}
     ports: ["127.0.0.1:8082:8082"]
     restart: unless-stopped
-    mem_limit: 384m
+    mem_limit: 768m
   domain-api:
     image: careerlens-java:${RELEASE_TAG:-v0.1-dev}
     build:
@@ -26,6 +27,12 @@ services:
         JRE_IMAGE: ${JRE_IMAGE:-m.daocloud.io/docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine@sha256:08eecc477dbe3f2e33daac27f36e41daf7f4ec51d2f3396006e54fa41832c74c}
     environment:
       PYTHON_URL: http://ai-service:8082
+      JWT_SECRET: ${JWT_SECRET:?Run python scripts/configure_runtime.py first}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Configure ADMIN_PASSWORD in local .env}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Configure DATABASE_PASSWORD in local .env}
+    volumes:
+      - domain-data:/data
     ports: ["127.0.0.1:8080:8080"]
     depends_on:
       ai-service: {condition: service_healthy}
@@ -60,3 +67,5 @@ services:
       bff: {condition: service_healthy}
     restart: unless-stopped
     mem_limit: 128m
+volumes:
+  domain-data:

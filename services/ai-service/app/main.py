@@ -4,6 +4,9 @@ import os
 import re
 import time
 import uuid
+import subprocess
+import sys
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -13,6 +16,7 @@ from starlette.exceptions import HTTPException
 from .models import Extraction, ExtractionInput
 from .extraction import Unanalyzable, make_evidence, rules
 from .provider import ModelFailure, model_extract
+from .documents import DocumentInput, DocumentFailure
 
 
 app = FastAPI(title="CareerLens AI extraction", version="0.1.0")
@@ -33,7 +37,7 @@ async def trace_and_limit(request: Request, call_next):
     content = bytearray()
     async for chunk in request.stream():
         content.extend(chunk)
-        if len(content) > 163840:
+        if len(content) > (2850000 if request.url.path == "/internal/v1/documents/text" else 163840):
             response = envelope("PAYLOAD_TOO_LARGE", "材料过大。", status=413)
             response.headers["X-Trace-Id"] = trace
             return response
@@ -104,3 +108,28 @@ async def extract(payload: ExtractionInput):
         return envelope("OK", "提取完成", result.model_dump())
     finally:
         slots.release()
+
+
+@app.post("/internal/v1/documents/text")
+async def document(payload: DocumentInput):
+    try:
+        await asyncio.wait_for(slots.acquire(), timeout=0.05)
+    except TimeoutError:
+        return envelope("RATE_LIMITED", "解析繁忙，请稍后重试。", status=429)
+    try:
+        result = await asyncio.to_thread(parse_document, payload)
+        return envelope("OK", "文件解析完成，请核对文本。", result)
+    except (DocumentFailure, TimeoutError):
+        return envelope("UNANALYZABLE_INPUT", "文件无法解析、过长或没有文字层。支持 MD、TXT、PDF、DOCX；请改为粘贴文本。", status=422)
+    finally:
+        slots.release()
+
+
+def parse_document(payload):
+    try:
+        result = subprocess.run([sys.executable, "-m", "app.document_worker"], input=payload.model_dump_json().encode(), capture_output=True, timeout=5, cwd=Path(__file__).resolve().parent.parent, env={k: v for k, v in os.environ.items() if k not in {"OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL", "JWT_SECRET", "ADMIN_PASSWORD", "DATABASE_PASSWORD"}})
+        if result.returncode or len(result.stdout) > 524288:
+            raise DocumentFailure()
+        return json.loads(result.stdout)
+    except (subprocess.SubprocessError, ValueError, OSError):
+        raise DocumentFailure() from None

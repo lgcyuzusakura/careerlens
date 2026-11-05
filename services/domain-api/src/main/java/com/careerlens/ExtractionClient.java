@@ -21,12 +21,18 @@ public class ExtractionClient {
         this.mapper = mapper; this.base = base; this.timeout = timeout;
     }
     public Extraction extract(Input input, String trace) {
+        var body = new ExtractionInput(input.resumeText(), input.jdText(), input.options() == null ? new Options(false) : input.options(), "analysis-v1", "skills-v1");
+        return post("/internal/v1/extractions",body,trace,new TypeReference<Envelope<Extraction>>() {});
+    }
+    public java.util.Map<String,Object> document(DocumentController.DocumentInput body,String trace) {
+        return post("/internal/v1/documents/text",body,trace,new TypeReference<Envelope<java.util.Map<String,Object>>>() {});
+    }
+    private <T> T post(String path,Object body,String trace,TypeReference<Envelope<T>> type) {
         HttpURLConnection connection = null;
         ScheduledFuture<?> deadline = null;
         long started = System.nanoTime();
         try {
-            var body = new ExtractionInput(input.resumeText(), input.jdText(), input.options() == null ? new Options(false) : input.options(), "analysis-v1", "skills-v1");
-            connection = (HttpURLConnection) URI.create(base + "/internal/v1/extractions").toURL().openConnection();
+            connection = (HttpURLConnection) URI.create(base + path).toURL().openConnection();
             connection.setConnectTimeout(1000); connection.setReadTimeout(Math.toIntExact(timeout));
             connection.setInstanceFollowRedirects(false); connection.setRequestMethod("POST"); connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", "application/json"); connection.setRequestProperty("X-Trace-Id", trace);
@@ -47,7 +53,7 @@ public class ExtractionClient {
                     buffer.write(chunk,0,count);
                 }
             }
-            Envelope<Extraction> envelope = mapper.readValue(buffer.toByteArray(), new TypeReference<>() {});
+            Envelope<T> envelope = mapper.readValue(buffer.toByteArray(), type);
             if (!"OK".equals(envelope.code()) || envelope.data() == null) throw new ServiceFailure(502, "UPSTREAM_FAILURE");
             return envelope.data();
         } catch (SocketTimeoutException e) { throw new ServiceFailure(504, "UPSTREAM_TIMEOUT"); }

@@ -33,7 +33,7 @@ Postman 选择 Import，导入 [CareerLens.postman_collection.json](../postman/C
 
 ## 4. PowerShell 调试示例
 
-以下命令仅在实现并启动 Docker 服务后执行，目前没有执行：
+以下命令需在四容器启动后执行；等价 HTTP 请求已由 `scripts/smoke.py` 与 `scripts/demo_chain.py` 跑通，但 Postman / PowerShell 这条独立路径本轮未执行，不记为通过：
 
 ```powershell
 $analysisPayload = @{
@@ -54,4 +54,4 @@ $analysisResponse.Content
 
 ## 5. 验收记录
 
-当前只提供合法 JSON 集合与设计请求，尚无应用响应，尚未执行 Postman/Newman。实现后补记录执行时间、版本 SHA、请求数/通过数和失败原因；不能提交包含真实材料的 Collection run 导出。
+集合只含合成数据与合法请求。应用已实现，`scripts/smoke.py` 与 `scripts/demo_chain.py` 已在线调通等价 HTTP 请求；但 **Postman/Newman 的独立 Collection run 仍未执行**，尚未记录执行时间、版本 SHA、请求数/通过数和失败原因，不把 HTTP smoke 当作 Newman 结果。不能提交包含真实材料的 Collection run 导出。

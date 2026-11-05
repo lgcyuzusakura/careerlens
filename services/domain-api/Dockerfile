@@ -9,7 +9,7 @@ COPY config /workspace/config
 RUN mvn -B -s settings.xml verify -q
 FROM ${JRE_IMAGE} AS runtime
 WORKDIR /app
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S app && adduser -S app -G app && mkdir /data && chown app:app /data
 COPY --from=build /workspace/services/domain-api/target/domain-api-0.1.0.jar app.jar
 USER app
 EXPOSE 8080
