@@ -717,3 +717,30 @@ Vue 工作台和 Node BFF 的首版代码已写入：前端包含输入、取消
 - 未执行：应用实现、应用单元/接口/浏览器测试、Compose 构建启动、真实模型、应用远端 CI 与回滚演练。
 - 工具/skill：Codex（GPT-6）、PowerShell、Git、GitHub CLI、Docker CLI、公开 GitHub REST API；使用用户五项 skill 与 request-chain。读取 computer-use 指引评估认证问题，没有通过 UI 自动化填写认证或读取凭据。
 - 只读 review：读取适用 AGENTS 与本轮完整 diff，结论 No findings；范围为文档/契约/Postman/检查脚本/workflow，未执行应用测试、Compose、浏览器或回滚。
+
+## 2026-11-05 22:34 · 持续开发与测试
+
+### 用户
+
+记得同时写单测和查看ci是否通过
+
+### AI
+
+我会继续核对远端 CI 的实际结果，并把失败项修到通过；同时完成 Docker 启动和接口联调。合并仍保留给你人工验收后批准。
+
+### AI
+
+远端 CI 正在执行四个 Docker 镜像的构建和单测，本机国内源已有镜像成功拉取。检查中发现 Java Dockerfile 的 JAR 复制路径与 Maven 输出目录不一致，我先修正这一处构建阻断。
+
+### AI
+
+新增的真实 HTTP 超时、超大响应、模型协议和伪造证据测试已通过，当前单测共 36 项。首轮应用 CI 已失败，我正在读取失败日志；Java 镜像路径修复会随本次测试增量一起推送重跑。
+
+### 本轮文件改变与证据
+
+- services/domain-api/Dockerfile：纠正 Maven 产物复制路径。
+- apps/bff/test/transport.test.js：真实 HTTP trace、超时、超大响应和无效 JSON 测试。
+- services/ai-service/tests/test_provider.py：模型 HTTP 协议、429/500/302、超时、非法 JSON、超大响应和伪造证据测试。
+- DELIVERY.md：更新实际测试与 CI 失败事实。
+- npm test：前端 3、BFF 8 项通过；pytest：17 项通过；Java 8 项在前一增量已通过，总计 36。
+- Python 首次新增测试因 Windows 下超长参数化 ID 失败，指定短 ID 后 17 项全通过。

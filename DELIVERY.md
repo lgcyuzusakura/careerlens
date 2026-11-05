@@ -2,6 +2,15 @@
 
 更新时间：2026-11-05，Asia/Shanghai。当前进入 v0.1 实现阶段；用户要求先 README，再 Vue -> Node -> Java -> Python，最后 Docker/测试/CI。所有“计划”项均不代表已通过验证。
 
+## 22:34 最新验证（覆盖下方早期准备状态）
+
+- 四层实现与应用 CI/CD workflow 已提交，分支 `feature/careerlens-v0.1`，main 未合并。
+- `npm test`：Vue 3、BFF 8 项通过；`pytest`：17 项通过；Java 前一增量 8 项通过，共 36 项。新增真实 HTTP 超时、超大响应、模型协议与伪造证据反例。
+- [首轮应用 CI](https://github.com/lgcyuzusakura/careerlens/actions/runs/42044875793) 实际失败：Java JAR 复制路径错误。日志确认 Maven 单测与打包已成功，现修正 Dockerfile 后重跑。
+- `docker compose config -q` 已通过；国内 nginx 镜像已拉取，其余基础镜像仍下载，尚未声称本机四容器运行成功。
+- 本机 Windows JDK 的 NIO loopback 异常影响宿主 Tomcat 启动，Linux Docker CI 的 Maven 测试不受该异常影响。
+- 外部模型仅有受控协议测试，未配置真实付费模型；人工审核与回滚仍待完成。
+
 ## v0.1 本轮进度
 
 - 已从文档分支新建 `feature/careerlens-v0.1`，未合并 main；先更新 README 的范围、运行契约和人工门禁。

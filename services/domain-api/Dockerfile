@@ -10,7 +10,7 @@ RUN mvn -B -s settings.xml verify -q
 FROM ${JRE_IMAGE} AS runtime
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
-COPY --from=build /workspace/target/domain-api-0.1.0.jar app.jar
+COPY --from=build /workspace/services/domain-api/target/domain-api-0.1.0.jar app.jar
 USER app
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s CMD wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1
