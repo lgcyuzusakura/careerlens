@@ -4,6 +4,8 @@
 
 ## 22:34 最新验证（覆盖下方早期准备状态）
 
+22:43 补充：第二轮 CI 的 Docker 构建、规则 smoke 与浏览器均通过；切换模型网关后第一条规则请求返回 502。Compose 仅重建 Python、上游仍缓存旧连接/DNS，已改为整链 `--force-recreate` 后重新验证。Java 新增真实 HTTP 测试和 REST 404/405 回归，现 14 项通过，总单测 42。新增 `scripts/release.py`、JSON Schema 与浏览器错误/取消回归，实际回滚仍待执行。
+
 - 四层实现与应用 CI/CD workflow 已提交，分支 `feature/careerlens-v0.1`，main 未合并。
 - `npm test`：Vue 3、BFF 8 项通过；`pytest`：17 项通过；Java 前一增量 8 项通过，共 36 项。新增真实 HTTP 超时、超大响应、模型协议与伪造证据反例。
 - [首轮应用 CI](https://github.com/lgcyuzusakura/careerlens/actions/runs/42044875793) 实际失败：Java JAR 复制路径错误。日志确认 Maven 单测与打包已成功，现修正 Dockerfile 后重跑。

@@ -744,3 +744,19 @@ Vue 工作台和 Node BFF 的首版代码已写入：前端包含输入、取消
 - DELIVERY.md：更新实际测试与 CI 失败事实。
 - npm test：前端 3、BFF 8 项通过；pytest：17 项通过；Java 8 项在前一增量已通过，总计 36。
 - Python 首次新增测试因 Windows 下超长参数化 ID 失败，指定短 ID 后 17 项全通过。
+
+### AI
+
+CI 日志确认失败原因就是已修正的 JAR 路径，新一轮已开始。接下来补四镜像快照与整套回滚脚本，并验证页面的超时恢复和取消状态；本机 Docker 构建正在继续。
+
+### AI
+
+新一轮 CI 已通过四镜像构建、单测、真实四层 HTTP 联调和浏览器验收，目前在检查模型兼容协议。Java 也新增了真实网络超时和错误响应测试，12 项已通过；本机 Python 镜像已完成构建。
+
+### 本轮文件改变（22:43 追加）
+
+- services/domain-api：新增真实 HTTP client 4 项测试；修正 404/405/415 路由错误映射，新增 2 项回归。Java 共 14 项通过。
+- scripts/release.py：保存健康四镜像快照、按内容 ID 整链部署并复验，不删除任何镜像。
+- contracts 与 scripts/export-contract.mjs：导出 BFF 请求/分析响应结构 Schema；Unicode/NFKC 语义仍由运行时校验。
+- tests/e2e/browser.py：真实成功链路后追加超时错误、材料保留、加载和取消测试。
+- .github/workflows/ci.yml：模型配置切换整链强制重建，避免上游缓存旧容器 DNS/连接。

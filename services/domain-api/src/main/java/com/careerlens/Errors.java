@@ -15,6 +15,12 @@ public class Errors {
     }
     @ExceptionHandler({MethodArgumentNotValidException.class,HttpMessageNotReadableException.class})
     ResponseEntity<Envelope<Void>> invalid(Exception e) { return ResponseEntity.badRequest().body(new Envelope<>("INVALID_INPUT","请检查字段类型和必填内容。",null)); }
+    @ExceptionHandler({org.springframework.web.servlet.resource.NoResourceFoundException.class, org.springframework.web.HttpRequestMethodNotSupportedException.class, org.springframework.web.HttpMediaTypeNotSupportedException.class})
+    ResponseEntity<Envelope<Void>> routing(Exception e) {
+        int status = ((org.springframework.web.ErrorResponse)e).getStatusCode().value();
+        String code = switch(status) { case 404 -> "NOT_FOUND"; case 405 -> "METHOD_NOT_ALLOWED"; default -> "UNSUPPORTED_MEDIA_TYPE"; };
+        return ResponseEntity.status(status).body(new Envelope<>(code,"请求的资源、方法或内容类型不支持。",null));
+    }
     @ExceptionHandler(Exception.class)
     ResponseEntity<Envelope<Void>> unknown(Exception e) { return ResponseEntity.internalServerError().body(new Envelope<>("INTERNAL_ERROR","服务暂不可用。",null)); }
 }

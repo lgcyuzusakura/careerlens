@@ -1,6 +1,8 @@
 # CareerLens 开发总纲
 
-状态：设计稿，应用代码尚未实现。日期：2026-11-05，Asia/Shanghai。
+状态：原始架构设计与实施计划，四层首版已经实现。日期：2026-11-05，Asia/Shanghai。实际运行证据以 DELIVERY.md 为准，以下目录树为设计目标。
+
+实现对照：Vue 与 BFF 为 JavaScript + 运行时校验，未采用原计划 TypeScript，以缩短限时实现；真实入口分别为 `apps/web/src/App.vue`、`apps/bff/src/app.js`、`services/domain-api/src/main/java/com/careerlens/ApiController.java`、`services/ai-service/app/main.py`。Java `ScorePolicy` 拥有评分，Python `provider.py` 隔离外部 HTTP，`config/skills.v1.json` 共享词典。请求/输出结构 Schema 位于 `contracts/`；真实跨层兼容由 `scripts/smoke.py` 验证，尚未做到所有语言分别加载同一反例 fixture。
 
 本文件根据本地 `test/README.md` 与用户本轮要求编写，先交付设计，再按可验证增量实现。用户原始资料目录只读保留在本地，公开参考只借鉴方法、不复制代码。
 

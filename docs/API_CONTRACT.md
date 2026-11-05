@@ -1,6 +1,6 @@
 # CareerLens v1 接口契约
 
-状态：设计，待生成 `contracts/analysis-v1.schema.json` 并在四层实现。此文档中的 JSON 全为合成数据，不来自用户简历。
+状态：四层已实现；结构 Schema 见 `contracts/analysis-v1.schema.json` 和 `contracts/analysis-input-v1.schema.json`，使用 `node scripts/export-contract.mjs` 重新生成。Schema 之外仍校验 NFKC/trim 后码点长度及证据语义。此文档中的 JSON 全为合成数据，不来自用户简历。
 
 ## 1. 通用约定
 
@@ -119,7 +119,7 @@
 - `mode` 只能为 llm / rules / degraded；有降级时 warning 必须非空。
 - 技能、要求、命中、缺口最多各 100 项；教育、工作、项目最多各 20 项；warning 和 issue 最多各 20 项。
 - 显示名最长 80、标题最长 200、摘要最长 1000、建议最长 500 code points；证据行最多 500 行且不超过清洗后输入上限。
-- evidence 按清洗后非空行编号，每行最多 20000 code points；过多行拒绝为 422，不能静默截断造成丢证据。
+- evidence 按清洗后非空行编号，每份材料最多 250 个非空行（合计 500），每行最多 20000 code points；过多行拒绝为 422，不能静默截断造成丢证据。
 - 每个 evidenceId 必须存在且 source 正确。matches 的 resumeEvidenceIds 非空，不能引用 JD 来证明简历技能。
 - matches 与 gaps 互斥，按 skillId 去重，其并集等于可识别 requirements；未知技能只列到 unmappedSkills 和 warning。
 - 所有 `weight` 由 Java ScorePolicy 回填，不接受 Python/LLM 任意权重。

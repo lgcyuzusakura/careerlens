@@ -45,7 +45,7 @@ jobs:
           /tmp/careerlens-browser/bin/python tests/e2e/browser.py
       - name: Verify compatible model protocol using synthetic gateway
         run: |
-          docker compose -f compose.yaml -f compose.test.yaml up -d --no-build --wait --wait-timeout 120
+          docker compose -f compose.yaml -f compose.test.yaml up -d --no-build --force-recreate --wait --wait-timeout 120
           EXPECTED_EXTERNAL_MODE=llm python3 scripts/smoke.py
       - name: Diagnose failures without material bodies
         if: failure()
