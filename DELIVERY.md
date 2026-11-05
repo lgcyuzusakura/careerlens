@@ -1,6 +1,12 @@
 # CareerLens 交付记录
 
-更新时间：2026-11-05，Asia/Shanghai。当前为文档准备阶段，应用尚未实现。所有“计划”项均不代表已通过验证。
+更新时间：2026-11-05，Asia/Shanghai。当前进入 v0.1 实现阶段；用户要求先 README，再 Vue -> Node -> Java -> Python，最后 Docker/测试/CI。所有“计划”项均不代表已通过验证。
+
+## v0.1 本轮进度
+
+- 已从文档分支新建 `feature/careerlens-v0.1`，未合并 main；先更新 README 的范围、运行契约和人工门禁。
+- 前端、Node、Java、Python 按用户顺序实现；各阶段实际测试结果将在此追加。
+- 最终交付可运行 v0.1 供用户测试，保持 Draft PR；用户未明确批准前不合并。
 
 ## 1. 启动与环境
 

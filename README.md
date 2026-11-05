@@ -1,8 +1,8 @@
-# CareerLens
+# CareerLens v0.1
 
 面向高校学生的简历与岗位分析工作台：输入简历文本和 JD，输出结构化简历、技能归一结果、命中证据、待补充证据及可解释的匹配分数。
 
-**当前阶段：开发文档与实施计划。应用、应用测试、Docker 镜像和应用 CI 尚未实现，不可启动；已提供独立的文档检查 workflow。**
+**当前阶段：v0.1 实现中。先更新本 README，再依次实现 Vue 前端、Node BFF、Java 领域服务、Python AI 服务。尚未完成的启动与测试不得视为已验证。**
 
 构建和运行以 Docker 为主，国内镜像源需可配置并锁定版本。固定端口：前端 3000、Java 8080、Node BFF 8081、Python 8082。业务接口统一 `{ code, msg, data }`。单测、集成测试、CI 和用户本人审核均通过后才允许合并 main。
 
@@ -13,6 +13,46 @@ Vue 3 -> Node.js BFF -> Java / Spring Boot -> Python -> LLM
 ```
 
 浏览器只调用 BFF；Java 持有领域契约与评分规则；Python 负责文本处理、技能提取及模型适配。LLM 不可用时保留规则提取能力，并明确展示降级状态。
+
+## v0.1 范围
+
+- 粘贴简历与 JD，或主动载入明确标记的虚构示例；选择合成岗位模板后仍可修改。
+- 清洗文本、归一技能、结构化教育/经历/项目，并展示有原文依据的命中与待补充项。
+- Java 按 required=3、unspecified=2、preferred=1 计算技能覆盖分；不是录用概率，无可识别要求时不评分。
+- 支持规则模式与 OpenAI-compatible 外部模型；外部发送默认关闭，失败明确降级，不冒充模型成功。
+- 支持取消、输入修改后的陈旧结果提示、错误恢复、证据定位、JSON 导出和移动端。
+- 无账号、数据库、历史记录或 PDF/OCR；材料只在当前页面与请求生命周期内处理。
+
+## Docker 启动
+
+以下为本版本要实现并实际验证的入口；当前实现进度与执行结果见 DELIVERY.md：
+
+```sh
+docker compose up -d --build --wait
+```
+
+| 服务 | 地址 | 用途 |
+| --- | --- | --- |
+| Vue 前端 | http://localhost:3000 | 主要测试入口，同源 /api 调 BFF |
+| Java | http://localhost:8080 | 领域 REST 与 Actuator 健康探针 |
+| Node BFF | http://localhost:8081 | 参数校验、编排、时限、统一错误 |
+| Python | http://localhost:8082 | 清洗、归一、外部模型提取 |
+
+所有宿主端口绑定 127.0.0.1。JDK、Maven、Node 与 Python 在 Docker 中构建运行，不要求宿主安装这些 SDK。基础镜像和 npm/Maven/PyPI 使用可配置的国内源，保留 TLS 校验、锁文件和固定镜像标识，不删除上一可用镜像。
+
+无 key 时默认规则路径可用。接入真实模型只在本机 `.env` 设置 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`，再在页面明确启用外部模型；密钥仅传给 Python 服务。不要在浏览器、Postman 集合、Git 或日志中放 key。
+
+## 测试、部署和回滚
+
+实现后统一执行文档检查、前端/BFF 单测、Java JUnit、Python pytest、跨层接口和浏览器测试。CI 应实际构建并启动四个容器，使用合成数据验证 HTTP 全链路；模型替身仅替换外部网关。
+
+部署使用同一 Git SHA 的四镜像清单，保留上一可用清单与镜像，回滚四层一起回切。精确命令、实际测试数、CI run 和回滚演练结果持续记录在 DELIVERY.md，未运行的检查明确标记。
+
+## 开发与合并门禁
+
+当前实现分支为 `feature/careerlens-v0.1`，继承尚未合并的文档分支内容；不先合并文档到 main。按“README -> Vue -> Node -> Java -> Python -> Docker/测试/CI”的顺序做可验证提交。
+
+提交前执行隐私检查；AI_LOG.md 逐轮复制双方对话并脱敏，DELIVERY.md 记录实际结果。v0.1 完成后提供可运行地址和 Draft PR 供用户测试。**单测、集成/E2E、Docker、CI 和用户本人明确人工审核全部通过前，禁止合并 main。** GitHub 当前套餐不支持私有库平台分支保护，此限制不豁免人工门禁。
 
 ## 文档
 
