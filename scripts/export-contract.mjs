@@ -10,6 +10,14 @@ for (const [name, schema] of [['analysis-v1', analysisSchema], ['analysis-input-
   if (name === 'analysis-input-v1') {
     Object.assign(contract.properties.resumeText, { minLength: 20, maxLength: 20000 })
     Object.assign(contract.properties.jdText, { minLength: 10, maxLength: 12000 })
+  } else {
+    contract.properties.evidence.items.properties.text = { type: 'string', minLength: 1, maxLength: 20000 }
+    contract.properties.structuredResume.properties.headline = { anyOf: [{ type: 'string', maxLength: 200 }, { type: 'null' }] }
+    for (const key of ['education', 'experience', 'projects']) {
+      const properties = contract.properties.structuredResume.properties[key].items.properties
+      properties.title = { anyOf: [{ type: 'string', maxLength: 200 }, { type: 'null' }] }
+      properties.summary = { type: 'string', maxLength: 1000 }
+    }
   }
   writeFileSync(`contracts/${name}.schema.json`, JSON.stringify(contract, null, 2) + '\n')
 }

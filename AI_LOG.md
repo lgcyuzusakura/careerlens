@@ -760,3 +760,20 @@ CI 日志确认失败原因就是已修正的 JAR 路径，新一轮已开始。
 - contracts 与 scripts/export-contract.mjs：导出 BFF 请求/分析响应结构 Schema；Unicode/NFKC 语义仍由运行时校验。
 - tests/e2e/browser.py：真实成功链路后追加超时错误、材料保留、加载和取消测试。
 - .github/workflows/ci.yml：模型配置切换整链强制重建，避免上游缓存旧容器 DNS/连接。
+
+### AI
+
+模型配置切换时暴露了容器替换后的旧连接问题，已将 CI 和回滚改为整链重建。现在进入 code-review skill 的独立只读审查阶段，重点检查 Unicode 边界、证据可信度和四层契约。
+
+### AI
+
+只读审查发现两处需要修复：BFF 输出长度按 UTF-16 计数，会拒绝本应合法的长 emoji 文本；Nginx 拦截超大请求时返回 HTML，未遵守统一 JSON 格式。现在结束只读阶段，分别修复并补回归测试。
+
+### 22:51 文件改变
+
+- apps/bff/src/response-schema.js、apps/bff/test/response.test.js：证据、标题、摘要按 Unicode code point 限长，回归通过。
+- apps/web/nginx.conf：413 JSON 信封、UUID 追踪号，关闭静态访问日志；容器内 nginx -t 通过。
+- scripts/smoke.py：追加前端 413 与 15000 emoji 的真实四层边界回归。
+- contracts、export-contract.mjs：同步结构 Schema 的码点上限。
+- compose.yaml、.env.example：锁定五个已解析 manifest 的基础镜像 digest。
+- 只读审查后修复，与审查阶段分开；当前单测 43 项，新增测试已经本机通过。

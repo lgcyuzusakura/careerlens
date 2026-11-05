@@ -2,6 +2,8 @@
 
 更新时间：2026-11-05，Asia/Shanghai。当前进入 v0.1 实现阶段；用户要求先 README，再 Vue -> Node -> Java -> Python，最后 Docker/测试/CI。所有“计划”项均不代表已通过验证。
 
+22:51：只读代码审查发现并修复 BFF 输出 UTF-16 限长与 Nginx 413 HTML 返回，新增单测与 smoke；43 项单测通过，nginx 容器配置检查通过。国内 Python/Java 应用镜像已构建，Node 基础层下载仍慢；未删除镜像。Compose 默认五个基础镜像已锁定 manifest digest。
+
 ## 22:34 最新验证（覆盖下方早期准备状态）
 
 22:43 补充：第二轮 CI 的 Docker 构建、规则 smoke 与浏览器均通过；切换模型网关后第一条规则请求返回 502。Compose 仅重建 Python、上游仍缓存旧连接/DNS，已改为整链 `--force-recreate` 后重新验证。Java 新增真实 HTTP 测试和 REST 404/405 回归，现 14 项通过，总单测 42。新增 `scripts/release.py`、JSON Schema 与浏览器错误/取消回归，实际回滚仍待执行。

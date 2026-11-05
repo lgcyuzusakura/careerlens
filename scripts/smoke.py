@@ -10,7 +10,7 @@ BODY = {"resumeText": "项目经历\n使用 Java 和 Spring Boot 实现合成课
 
 
 def call(path, body=None, status=200, base=BASE):
-    data = json.dumps(body).encode() if body is not None else None
+    data = json.dumps(body, ensure_ascii=False).encode() if body is not None else None
     request = urllib.request.Request(base + path, data=data, headers={"Content-Type": "application/json"})
     try:
         response = urllib.request.urlopen(request, timeout=26)
@@ -38,6 +38,9 @@ def main():
         assert direct["code"] == "OK"
     call("/api/v1/analyses", {**BODY, "resumeText": " "}, 400)
     call("/api/v1/analyses", {**BODY, "unknown": True}, 400)
+    call("/api/v1/analyses", {**BODY, "resumeText": "a" * 170000}, 413)
+    unicode_result, _ = call("/api/v1/analyses", {**BODY, "resumeText": "😀" * 15000 + " Java"})
+    assert len(unicode_result["data"]["evidence"][0]["text"]) == 15005
     no_requirements, _ = call("/api/v1/analyses", {**BODY, "jdText": "请积极主动，拥有良好的沟通能力和团队合作精神。"})
     assert no_requirements["data"]["score"]["value"] is None
     result, _ = call("/api/v1/analyses", {**BODY, "options": {"useExternalModel": True}})
