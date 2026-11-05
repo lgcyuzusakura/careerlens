@@ -32,7 +32,7 @@ public class ExtractionClient {
             connection.setRequestProperty("Content-Type", "application/json"); connection.setRequestProperty("X-Trace-Id", trace);
             final var active = connection;
             deadline = DEADLINES.schedule(active::disconnect, timeout, TimeUnit.MILLISECONDS);
-            byte[] bytes = mapper.writeValueAsBytes(body); connection.setFixedLengthStreamingMode(bytes.length);
+            byte[] bytes = mapper.writer().with(com.fasterxml.jackson.core.json.JsonWriteFeature.COMBINE_UNICODE_SURROGATES_IN_UTF8).writeValueAsBytes(body); connection.setFixedLengthStreamingMode(bytes.length);
             try (var stream = connection.getOutputStream()) { stream.write(bytes); }
             int responseStatus = connection.getResponseCode();
             if (responseStatus != 200) {

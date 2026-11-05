@@ -777,3 +777,24 @@ CI 日志确认失败原因就是已修正的 JAR 路径，新一轮已开始。
 - contracts、export-contract.mjs：同步结构 Schema 的码点上限。
 - compose.yaml、.env.example：锁定五个已解析 manifest 的基础镜像 digest。
 - 只读审查后修复，与审查阶段分开；当前单测 43 项，新增测试已经本机通过。
+
+### AI
+
+已有一轮完整应用 CI 全绿，包含 Docker、四层接口、浏览器和模型兼容网关测试。刚补的 Unicode 与 413 回归正在跑最新一轮；本机目前卡在 Node 镜像层下载，我正在处理，以便给你可直接打开的 Docker 环境。
+
+### AI
+
+Node 镜像下载仍停滞，但国内 Node 二进制源可达。我会增加一个 Docker 应急构建入口：使用已拉取的 Linux 基础镜像，在容器内安装同版 Node，并校验与官方一致的 SHA-256。
+
+### AI
+
+本机四个 Docker 容器已全部健康运行。新增的长 emoji 联调又定位到 Java 序列化的字节膨胀：约 60 KB 的文本被转义成约 180 KB，触发 Python 请求上限；我会修正编码并保留这条真实链路回归。
+
+### 23:03 文件改变与实际验证
+
+- docker/node-base.Dockerfile：容器内从国内镜像安装 Node 24.11.0；归档 SHA-256 与 nodejs.org 的 SHASUMS 一致；Docker 构建成功。
+- .env（本地忽略、不提交）：仅 NODE_IMAGE 应急镜像选择，没有模型密钥。
+- ExtractionClient.java 与测试：JSON UTF-8 合并 surrogate，增加真实 wire byte budget 测试；Java 15 项本机通过，总计 44 项。
+- README.md：同步代码实现、Docker、应急源、测试与快照命令。
+- scripts/debug_boundary.py：仅合成数据，输出状态/错误码/长度，证明 Python 直连 200、旧 Java 502；不输出材料。
+- 第二轮修复后的完整绿色 CI：42048288344，覆盖 f055147；新 Unicode smoke 在 42049145654 揭示序列化问题，未把旧绿色当成最新通过。

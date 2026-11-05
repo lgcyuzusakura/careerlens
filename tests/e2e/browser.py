@@ -37,12 +37,15 @@ with sync_playwright() as playwright:
     expect(page.get_by_role("alert")).to_contain_text("分析超时")
     expect(page.get_by_label("简历文本", exact=True)).not_to_have_value("")
     page.unroute("**/api/v1/analyses")
-    page.route("**/api/v1/analyses", lambda route: None)
+    pending = []
+    page.route("**/api/v1/analyses", lambda route: pending.append(route))
     page.get_by_role("button", name="分析匹配").click()
     expect(page.get_by_role("button", name="分析中", exact=True)).to_be_disabled()
     page.get_by_role("button", name="取消", exact=True).click()
     expect(page.get_by_role("button", name="分析匹配", exact=True)).to_be_enabled()
-    page.unroute("**/api/v1/analyses")
+    for route in pending:
+        route.abort()
+    page.unroute_all(behavior="ignoreErrors")
     page.set_viewport_size({"width": 320, "height": 740})
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert not errors, errors

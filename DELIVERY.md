@@ -2,6 +2,18 @@
 
 更新时间：2026-11-05，Asia/Shanghai。当前进入 v0.1 实现阶段；用户要求先 README，再 Vue -> Node -> Java -> Python，最后 Docker/测试/CI。所有“计划”项均不代表已通过验证。
 
+## 23:03 运行事实
+
+- 本机四个容器已经 `docker compose up -d --no-build --wait --wait-timeout 120` 健康运行；前端 http://localhost:3000，Java 8080、Node 8081、Python 8082，均仅 localhost。
+- Node OCI 长时间下载停滞，新增 `docker/node-base.Dockerfile`，使用国内归档源并核对 Node 官方 SHA-256；Docker 内构建成功。被忽略的本机 `.env` 只设置 NODE_IMAGE，默认 Compose 仍为固定 digest 的国内 OCI 镜像。
+- [完整绿色 CI](https://github.com/lgcyuzusakura/careerlens/actions/runs/42048288344) 属于 f055147，含四镜像、42 单测、HTTP、浏览器、合成模型协议。随后新增 Unicode smoke 在下一 run 揭示 Java JSON escape 膨胀，现已修复，不把早期绿色作为最新状态。
+- 最新本机单测：Vue 3 + BFF 9 + Java 15 + Python 17 = 44。最新 Java 镜像正在重建，完整 Unicode smoke 将重新执行。
+- 发布/回滚入口：`python scripts/release.py --snapshot v0.1-baseline`，再用 `python scripts/release.py --deploy output/releases/v0.1-baseline.json` 精确回切四镜像。此刻演练尚未执行。
+- 取舍：前端/BFF 使用 JS 与运行时校验；Java 评分；Python 严格验证证据；无数据库、无账号、无持久化原始材料。公网部署前必须增加认证和 TLS。
+- 当前差距：真实模型 key 未配置；GHCR 发布未执行；私有库保护套餐受限；用户人工验收仍未批准。保持 feature/Draft，不合并 main。
+
+以下为按开发时间保留的历史记录；如与上方状态不同，以最新运行事实为准。
+
 22:51：只读代码审查发现并修复 BFF 输出 UTF-16 限长与 Nginx 413 HTML 返回，新增单测与 smoke；43 项单测通过，nginx 容器配置检查通过。国内 Python/Java 应用镜像已构建，Node 基础层下载仍慢；未删除镜像。Compose 默认五个基础镜像已锁定 manifest digest。
 
 ## 22:34 最新验证（覆盖下方早期准备状态）

@@ -2,7 +2,7 @@
 
 面向高校学生的简历与岗位分析工作台：输入简历文本和 JD，输出结构化简历、技能归一结果、命中证据、待补充证据及可解释的匹配分数。
 
-**当前阶段：v0.1 实现中。先更新本 README，再依次实现 Vue 前端、Node BFF、Java 领域服务、Python AI 服务。尚未完成的启动与测试不得视为已验证。**
+**v0.1 四层代码已实现，Docker 已在本机启动。测试与远端 CI 证据见 [DELIVERY.md](DELIVERY.md)。当前保留 feature 分支，人工验收前不合并。**
 
 构建和运行以 Docker 为主，国内镜像源需可配置并锁定版本。固定端口：前端 3000、Java 8080、Node BFF 8081、Python 8082。业务接口统一 `{ code, msg, data }`。单测、集成测试、CI 和用户本人审核均通过后才允许合并 main。
 
@@ -25,7 +25,7 @@ Vue 3 -> Node.js BFF -> Java / Spring Boot -> Python -> LLM
 
 ## Docker 启动
 
-以下为本版本要实现并实际验证的入口；当前实现进度与执行结果见 DELIVERY.md：
+默认使用已锁定 digest 的国内基础镜像：
 
 ```sh
 docker compose up -d --build --wait
@@ -42,11 +42,42 @@ docker compose up -d --build --wait
 
 无 key 时默认规则路径可用。接入真实模型只在本机 `.env` 设置 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`，再在页面明确启用外部模型；密钥仅传给 Python 服务。不要在浏览器、Postman 集合、Git 或日志中放 key。
 
+如 Node OCI 镜像下载停滞，可在 Docker 内构建同版应急基础镜像（仅 linux/amd64，归档 hash 已与 nodejs.org 核对）：
+
+```powershell
+docker build -f docker/node-base.Dockerfile -t careerlens-node:24.11.0-local .
+$env:NODE_IMAGE = 'careerlens-node:24.11.0-local'
+docker compose up -d --build --force-recreate --wait
+```
+
+本机已经在被忽略的 `.env` 配置上述 Node 应急镜像，没有模型 key。更改模型配置或回滚时整链 `--force-recreate`，避免代理缓存旧容器地址。
+
 ## 测试、部署和回滚
 
-实现后统一执行文档检查、前端/BFF 单测、Java JUnit、Python pytest、跨层接口和浏览器测试。CI 应实际构建并启动四个容器，使用合成数据验证 HTTP 全链路；模型替身仅替换外部网关。
+Docker build 内执行前端/BFF、Java JUnit、Python pytest。宿主开发验证和运行后验收入口：
+
+```sh
+npm ci
+npm test
+mvn -B -s services/domain-api/settings.xml -f services/domain-api/pom.xml test
+python -m pip install -r services/ai-service/requirements.lock
+python -m pytest services/ai-service/tests -q
+python scripts/smoke.py
+python -m pip install playwright==1.56.0
+python -m playwright install chromium
+python tests/e2e/browser.py
+```
+
+CI 实际构建并启动四个容器，再测试浏览器和 OpenAI-compatible 合成网关；网关测试不能证明真实付费模型质量。
 
 部署使用同一 Git SHA 的四镜像清单，保留上一可用清单与镜像，回滚四层一起回切。精确命令、实际测试数、CI run 和回滚演练结果持续记录在 DELIVERY.md，未运行的检查明确标记。
+
+```sh
+python scripts/release.py --snapshot v0.1-baseline
+python scripts/release.py --deploy output/releases/v0.1-baseline.json
+```
+
+快照先检查四容器健康并执行 smoke，保存内容 ID 和保留标签；部署使用清单中四个精确镜像 ID，无构建、无 prune。CD 仅在 main 的 CI 绿色后向 GHCR 发布 SHA 标签，当前尚未发布。
 
 ## 开发与合并门禁
 
