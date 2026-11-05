@@ -112,7 +112,7 @@
 }
 ```
 
-样例用于说明最终结构，不是当前已跑通的响应。实际 project title 若没有原文可定位依据，应设 null；不能由 UI 示例反推解析承诺。
+样例用于说明响应结构，数值取自已跑通的合成材料请求；仍不是对任意输入的承诺。实际 project title 若没有原文可定位依据，应设 null；不能由 UI 示例反推解析承诺。
 
 ### 结果不变量
 
@@ -234,4 +234,4 @@ data.errors 只允许安全字段名和 msg，不回显被拒绝的输入值。�
 
 导入 `postman/CareerLens.postman_collection.json`，变量为 `webBaseUrl=http://localhost:3000`、`bffBaseUrl=http://localhost:8081`、`javaBaseUrl=http://localhost:8080`、`pythonBaseUrl=http://localhost:8082`。具体操作见 [Postman 说明](POSTMAN.md)。
 
-集合覆盖浏览器入口分析、直连 BFF 分析、Java 匹配、Python 提取、非法参数、岗位模板和健康探针。请求仅使用合成数据，options.useExternalModel=false；应用尚未实现，集合当前用于契约审阅，不声称已经在线调通。
+集合覆盖浏览器入口分析、直连 BFF 分析、Java 匹配、Python 提取、非法参数、岗位模板和健康探针。请求仅使用合成数据，options.useExternalModel=false；应用已实现，`scripts/smoke.py` 与 `scripts/demo_chain.py` 已用等价请求在线跑通四层链路。Postman/Newman 的独立 Collection run 仍未执行，不声称该工具已验证。

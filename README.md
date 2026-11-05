@@ -2,7 +2,7 @@
 
 面向高校学生的简历与岗位分析工作台：输入简历文本和 JD，输出结构化简历、技能归一结果、命中证据、待补充证据及可解释的匹配分数。
 
-**v0.1 四层代码已实现，Docker 已在本机启动。测试与远端 CI 证据见 [DELIVERY.md](DELIVERY.md)。当前保留 feature 分支，人工验收前不合并。**
+**v0.1 四层代码已实现，Docker 已在本机启动。测试与远端 CI 证据见 [DELIVERY.md](DELIVERY.md)。** 注意：PR #2 已于 2026-11-05 23:17 合并进 main（`30158f4`），并触发 CD run `42054682893` 向 GHCR 发布；该合并是否符合「用户本人明确人工审核通过」门禁仍需用户确认，详见 DELIVERY.md 第 0 节。
 
 构建和运行以 Docker 为主，国内镜像源需可配置并锁定版本。固定端口：前端 3000、Java 8080、Node BFF 8081、Python 8082。业务接口统一 `{ code, msg, data }`。单测、集成测试、CI 和用户本人审核均通过后才允许合并 main。
 
@@ -77,13 +77,15 @@ python scripts/release.py --snapshot v0.1-baseline
 python scripts/release.py --deploy output/releases/v0.1-baseline.json
 ```
 
-快照先检查四容器健康并执行 smoke，保存内容 ID 和保留标签；部署使用清单中四个精确镜像 ID，无构建、无 prune。CD 仅在 main 的 CI 绿色后向 GHCR 发布 SHA 标签，当前尚未发布。
+快照先检查四容器健康并执行 smoke，保存内容 ID 和保留标签；部署使用清单中四个精确镜像 ID，无构建、无 prune。CD 在 main 的 CI 绿色后由 `workflow_run` 自动向 GHCR 发布 SHA 标签；run `42054682893` 已成功执行（digest 未独立核验）。该自动发布没有人工审批步骤，是已知门禁缺口，详见 DELIVERY.md。
 
 ## 开发与合并门禁
 
-当前实现分支为 `feature/careerlens-v0.1`，继承尚未合并的文档分支内容；不先合并文档到 main。按“README -> Vue -> Node -> Java -> Python -> Docker/测试/CI”的顺序做可验证提交。
+v0.1 实现分支 `feature/careerlens-v0.1` 已通过 PR #2 合并进 main（`30158f4`）；另一并发会话当前在 `feature/careerlens-accounts-import` 上开发 v0.2，工作区含其未提交改动。历史提交按“README -> Vue -> Node -> Java -> Python -> Docker/测试/CI”的顺序完成。
 
 提交前执行隐私检查；AI_LOG.md 逐轮复制双方对话并脱敏，DELIVERY.md 记录实际结果。v0.1 完成后提供可运行地址和 Draft PR 供用户测试。**单测、集成/E2E、Docker、CI 和用户本人明确人工审核全部通过前，禁止合并 main。** GitHub 当前套餐不支持私有库平台分支保护，此限制不豁免人工门禁。
+
+**当前门禁事实**：PR #2 已于 2026-11-05 23:17 合并进 main（`30158f4`），合并时无 review / 评论，并连带触发 CD run `42054682893` 自动向 GHCR 发布。是否符合「用户本人明确人工审核通过」需用户确认；此事实不改变上述规则，也不作为已获人工批准的证据。自动发布缺人工审批是已记录的 P0 缺口。
 
 ## 文档
 
@@ -91,8 +93,11 @@ python scripts/release.py --deploy output/releases/v0.1-baseline.json
 - [接口契约](docs/API_CONTRACT.md)：跨层字段、证据、返回值和错误约定。
 - [前端设计](docs/FRONTEND_DESIGN.md)：工作台交互、设计 token、响应式与状态。
 - [参考调研](docs/REFERENCES.md)：已读取的公开参考、借鉴范围与许可证边界。
-- [Postman 调试说明](docs/POSTMAN.md)：导入集合、四个端口和合成请求；应用实现后执行。
+- [Postman 调试说明](docs/POSTMAN.md)：导入集合、四个端口和合成请求；等价 HTTP 请求已跑通，Postman/Newman 独立执行仍未记录。
 - [交付说明](DELIVERY.md)：实际执行记录、启动、部署、回滚、缺口和演示路径。
+- [15 分钟答辩稿](docs/DEFENSE_15MIN.md)：逐字稿、时间分配、预设问答与兜底话术。
+- [请求链演示手册](docs/DEMO_REQUEST_CHAIN.md)：同一 trace 的六步演示与 curl 等价命令。
+- [测试 JD 来源与合成稿](docs/JD_TEST_SAMPLE.md)：公开来源、访问日期、脱敏摘录与虚构测试稿。
 - [会话记录](AI_LOG.md)：按日期复制双方对话原文，敏感值脱敏，并附每轮文件变更。
 - [变更记录](CHANGELOG.md)：按可验证增量记录改动。
 

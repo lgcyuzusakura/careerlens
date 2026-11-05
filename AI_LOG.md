@@ -1,5 +1,51 @@
 # AI_LOG：用户与 AI 对话原文
 
+## 2026-11-05 23:48（Asia/Shanghai）：v0.1 合并与 v0.2 开发
+
+### 用户（后续补充）
+
+要没时间里，快点，没做完的你写到并在 `DELIVERY.md` 写明实际验证过的启动、测试、部署/回滚、架构取舍和已知缺口。  先起码保证代码正常运行，镜像没问题，功能基础的都实现了
+
+### AI
+
+我现在优先确保 Docker 能启动、基础功能能用。会尽快跑通注册登录、上传、分析和模拟充值，把实际验证结果及未完成项写进 `DELIVERY.md`；新版仍保留在 feature 分支。
+
+### 用户
+
+我测试完了，这版可以推主分支了如果单测ci什么的都没问题的话，然后我提修改意见。首先加一个上传的按钮，用户可以上传md，txt，pdf等等，作为简历模板，然后jd还是提供复制或者上传。然后ai请求打到codex配置的中转站就好。key也是，实例丰富一点，然后加上简单的jwt认证，就是需要用户注册登录的，然后就是可以加入管理端和用户段，管理端可以看后台数据，给用户设置一个充值入口【留出来就行，不用真接入，写好规范，就是写假接入】然后就是管理端一定要能看到用户充值啊，额度等等信息，用户端也显示，然后可以设置抽成比例什么的
+
+### AI
+
+我会继续补齐新功能的单测，并检查 GitHub CI。已验收的旧版已经合入 main；上传、账户和充值这批改动会留在新 feature 分支，等你验收后再合并。
+
+### AI
+
+main 合并后的 CI 和镜像发布都已通过。新版后端已加入 JWT、额度和模拟充值逻辑，我正在验证并发扣费、重复确认和权限边界，同时补上前端登录、上传与管理页面。
+
+### AI
+
+本地前端和 BFF 的既有测试已通过，新增 Python 文件解析与 Responses 协议测试也已跑起来。上传会先提取文字供用户核对；充值按模拟订单处理，后台记录分成比例，用户购买的额度不受分成影响。
+
+### AI
+
+单测发现了 JWT 校验中的一个问题：签发方字符串被按 URL 读取，导致正常登录令牌也被拒绝。已修正并准备重跑；文件解析也会放进可终止的独立进程，确保超时后能释放资源。
+
+### AI
+
+新增的账户测试已覆盖 JWT 篡改、越权访问、并发额度扣减、失败退款和充值幂等，当前均通过。前端构建也已通过；接下来把四层新版镜像启动起来，验证上传、账户和后台的真实链路。
+
+### 文件改变与验证
+
+- Java：新增账户、JWT 过滤器、H2 事务、充值幂等、额度预扣和失败退款、后台设置与文件代理。修复 issuer 读取、个人订单隔离、H2 字段命名和整数边界。
+- BFF：严格账户契约、Bearer 透传、模拟订单接口、multipart 上传和安全错误映射；新增对应测试。
+- Vue：注册/登录、会话、用户账户/模拟充值、管理员后台、上传回填和三个虚构简历样例。JWT 只存当前标签页 sessionStorage。
+- Python：文本/PDF/DOCX 解析、隔离工作进程、Responses 适配；45 项测试已通过。
+- Compose/Docker：持久卷和非 root 数据目录、运行时环境注入、超时预算；待本轮构建验证。
+- scripts/configure_runtime.py：用户授权读取当前 Codex provider，写入忽略的 .env；任何凭据、模型账户地址及密码均未抄入日志。
+- v0.1 PR #2 已按用户授权合并，main 为 30158f4；main CI 42053405971 与发布 42054682893 均绿色。新版尚未提交/推送或合并。
+- 同工作区另一个会话添加的答辩/演示文档和暂存内容予以保留，本轮不改写其历史。
+
+
 日期使用 Asia/Shanghai。按用户 2026-11-05 的最新要求直接复制对话，保留角色和日期，附本轮文件变更。一次性验证码、密钥、token 和真实个人资料以 `[已脱敏]` 替换；不保存原值。工具执行输出不属于双方对话，不直接粘贴，以实际验证附件记录。
 
 本轮未收到正式“开始计时”声明。环境检查时间为 2026-11-05 21:03 起，不把它写成考试开始；未提供的逐条精确时间不编造。
@@ -798,3 +844,83 @@ Node 镜像下载仍停滞，但国内 Node 二进制源可达。我会增加一
 - README.md：同步代码实现、Docker、应急源、测试与快照命令。
 - scripts/debug_boundary.py：仅合成数据，输出状态/错误码/长度，证明 Python 直连 200、旧 Java 502；不输出材料。
 - 第二轮修复后的完整绿色 CI：42048288344，覆盖 f055147；新 Unicode smoke 在 42049145654 揭示序列化问题，未把旧绿色当成最新通过。
+
+## 2026-11-05 23:13–23:50 · 答辩准备、交付核验与独立只读审查
+
+### 用户
+
+1. 准备 15 分钟答辩，演示请求链。【这个项目需要的，你帮我做了，然后检查一下提交可运行代码、测试、Docker/Compose 与 CI/CD 配置，并在 DELIVERY.md 写明实际验证过的启动、测试、部署/回滚、架构取舍和已知缺口。是否有问题
+22:59
+已处理 12分钟 41秒
+我会先核对仓库和交付记录，准备 15 分钟答辩材料及请求链演示，再按实际执行结果检查代码、测试、Compose 和 CI/CD，并更新 DELIVERY.md。验证完成后会单独做一轮只读审查，列出仍存在的问题。
+运行了命令
+你顺便找一个  岗位文本JD：从任意招聘网站复制下来 —— 开发相关的岗位需求，测试用的
+23:00
+我也会找一条公开的开发岗位 JD，记录招聘来源和访问日期，再整理成去除联系方式的测试稿。我会使用 exam-delivery、`request-chain` 和 code-review 技能；其中与仓库约束冲突的平台、审批和日志规则，以你的 AGENTS.md 为准。
+运行了命令已搜索网页
+检查发现两项交付问题：`DELIVERY.md` 还保留着“尚无代码”的旧状态，最新应用 CI 也确实失败了，卡在长 Unicode 文本的跨层请求。四个容器目前健康，但运行镜像与最新构建镜像不一致；我会先核对并修复这条边界，再重新验证演示链路和回滚。
+运行了命令已搜索网页
+最新提交的远端应用 CI 已全绿，包含四镜像构建、真实 HTTP 链路、浏览器验收和合成模型网关测试；本机浏览器验收也通过了。接下来会补齐可直接照着讲的答辩稿、同一 trace 的演示脚本，并实际演练整套回滚。真实付费模型调用仍未验证，会单独标明。【总之就是帮我准备 15 分钟答辩，演示请求链。【这个项目需要的，你帮我做了，然后检查一下提交可运行代码、测试、Docker/Compose 与 CI/CD 配置，并在 DELIVERY.md 写明实际验证过的启动、测试、部署/回滚、架构取舍和已知缺口。是否有问题还有你顺便找一个  岗位文本JD：从任意招聘网站复制下来 —— 开发相关的岗位需求，测试用的
+
+### AI
+
+我先把仓库的真实状态核对清楚——粘贴过来的那段记录只能当线索，不能当结论；按 `AGENTS.md` 的要求，未实际执行的检查一律不能记为通过。
+
+### AI
+
+这里出现了一个需要立刻核实的情况：远端 `main` 已经有 PR #2 的合并提交，而交付记录仍写着"保持 Draft、不合并"。我先把合并事实和 CI 状态查清楚。
+
+### AI
+
+答辩稿和演示脚本已经写好并跑通。接下来实际演练一次清单回滚，并把结果写进交付记录。
+
+### AI
+
+修复阶段结束，现在进入独立只读审查，并同时把新文档纳入静态检查。
+
+### AI
+
+审查发现了我新增脚本里的几处"PASS 建立在未断言的检查上"，以及已提交代码里的严重问题。先修我自己引入的部分，已提交代码的问题单独列入报告、不碰并发会话正在改的文件。
+
+### 本轮文件改变与证据
+
+- 新增：`docs/DEFENSE_15MIN.md`（15 分钟逐字稿、时间分配、预设问答、合规红线、兜底话术）、`docs/DEMO_REQUEST_CHAIN.md`（请求链演示手册与 curl 等价命令）、`docs/JD_TEST_SAMPLE.md`（公开招聘来源、URL、访问日期 2026-11-05、脱敏摘录、明确虚构的合成测试稿）、`scripts/demo_chain.py`（同一 trace 六步真实 HTTP 演示）、`tests/fixtures/jd-synthetic.txt`。
+- 更新：`DELIVERY.md`（重建当前状态、保留历史失败）、`README.md`、`CHANGELOG.md`、`AI_LOG.md`、`docs/API_CONTRACT.md`、`docs/POSTMAN.md`、`docs/DEVELOPMENT.md`（同步已实现/已验证状态）。
+- 本机生成且 Git 忽略：`output/demo/chain-*.json`、`output/releases/compose-release.json`、`output/playwright/*.png`；不提交。
+- 实际执行：四容器健康与 `docker compose config -q`；前端 3 + BFF 9 + Java 15 + Python 17 = 44 项单测；`scripts/smoke.py` 三次通过；浏览器验收首次缺 Chromium 失败、安装后通过；`scripts/demo_chain.py` 默认 / 含降级 / 跳过日志 / 拒绝远程地址四种路径通过；`scripts/check_docs.py` 通过（13 Markdown、6 JSON 示例、10 Postman 请求）。
+- 实际回滚演练：`python scripts/release.py --deploy output/releases/v0.1-baseline.json` 把四容器切到清单精确 image ID 并 smoke 通过，再 `docker compose up -d --no-build --force-recreate --wait` 回切默认标签并 smoke 通过；两版镜像内容相同，只验证清单切换机制，跨版本 A→B→A 仍标记未验证。
+- 远端只读核验：feature run 42051190947、PR run 42051203482、main run 42053405971 均 success；CD run 42054682893 success（自动向 GHCR 推送四镜像）。PR #2 于 2026-11-05 23:17 合并进 main（30158f4），无 review / 评论，与人工审核门禁冲突，待用户确认。
+- 独立只读审查：覆盖暂存 diff、四层调用点、缺失测试与交付配置；发现 release.yml 自动发布无人工审批、Java 未交叉核对 evidence 文本、413/415/405 映射压缩等问题，已列入 DELIVERY.md 0.8；审查阶段未修改文件，修复阶段只改本轮新增脚本与文档。
+- 公开 JD 获取：牛客网 / BOSS直聘公开检索索引摘要，页面正文需登录或为 JS 渲染列表；已删除企业名、薪资、地点、招聘者、联系方式与投递入口，运行时只用明确虚构的合成稿。
+- 并发事实：同一工作区另一会话正在写 v0.2（账号/导入）未提交代码，并创建 `feature/careerlens-accounts-import` 分支；本轮显式列出暂存文件，未暂存、未提交这些改动。
+- 脱敏说明：本轮通过本机已存储的 git 凭据只读查询 GitHub API，凭据值未输出、未写入任何文件，记为 `[已脱敏]`；未使用或记录 API key、授权码、token、真实简历与真实 JD 联系方式。
+
+### AI（最终答复）
+
+已完成：15 分钟答辩稿 + 请求链演示（同一 trace）、公开 JD 来源与合成测试稿、可运行代码/测试/Docker/Compose/CI-CD 核验、DELIVERY.md 实际验证记录、独立只读审查。**有问题，而且有两项需要你本人确认/决策**。
+
+一、交付物（本轮新增/更新）
+- `docs/DEFENSE_15MIN.md`：逐字稿、时间分配、预设问答、合规红线、兜底话术。
+- `docs/DEMO_REQUEST_CHAIN.md` + `scripts/demo_chain.py`：六步真实 HTTP 演示；实测同一 trace 在 bff / domain-api / ai-service 三行日志一致；逐层直连证明 Python 无 score、Java 有 score；400/413/null/degraded。默认不外发模型，所有 PASS 都有断言，`--no-logs` 明确标记跳过。
+- `docs/JD_TEST_SAMPLE.md` + `tests/fixtures/jd-synthetic.txt`：牛客网 / BOSS直聘公开招聘页，来源 URL + 访问日期 2026-11-05 + 脱敏摘录；运行时只用明确虚构的合成稿。
+- `DELIVERY.md` 重建当前状态（保留历史失败）、`AI_LOG.md` / `CHANGELOG.md` / `README.md` 与三份开发文档同步。
+
+二、实际验证（本机 23:13–23:50）
+- 四容器 healthy，端口仅 127.0.0.1；`docker compose config -q` 通过。
+- 单测 44：前端 3 + BFF 9 + Java 15 + Python 17，全通过。
+- `smoke.py` 通过三次（86/100、命中 Java/Spring Boot、缺口 Docker、15000 emoji 边界、400/413、空要求 null、degraded）。
+- 浏览器验收：首次缺 Chromium 失败，安装后 PASS；截图在 `output/playwright/`。
+- 回滚：执行 `release.py --deploy` 基线清单 → 四容器精确 image ID + healthy + smoke PASS → 回切默认标签再 smoke PASS。**但两版镜像内容相同，只验证清单切换机制，跨版本 A→B→A 仍算未验证**。
+- 远端：feature `42051190947`、PR `42051203482`、main `42053405971` 三个 CI 全绿；CD `42054682893` 成功。
+
+三、需要你确认 / 仍有问题
+1. **P0 人工门禁**：PR #2 在 23:17 被合并进 main（`30158f4`），无 review / 评论，而 23:03 记录仍写「人工验收未批准、不合并」。如果这不是你本人在 GitHub 上手动批准，就违反了 `AGENTS.md` 的人工审核门禁，并且连带触发了 CD 自动发布（GHCR 推送不可撤回）。我没有 revert、没有强推、没有重写历史，请你确认后再决定处理方式。
+2. **P0 自动发布无门禁**：`release.yml` 靠 main CI 绿色即 `workflow_run` 自动推四镜像，无人工批准 / 环境审批；私有库分支保护又因套餐 403 不可用。建议加人工审批或调整触发条件。
+3. **P0 已提交代码缺口（只读审查发现）**：Java 只校验 evidence ID / source，未把 `evidence.text`、`rawMentions`、`line` 与原始简历交叉核对，理论上可伪造命中；413/415/405 在 BFF / Java 被压成 502 并丢 `data.errors`。这些文件正被并发 v0.2 会话编辑，我只记录、没改。
+4. 未验证：真实付费 LLM、GHCR digest 独立核验（本机凭据缺 `read:packages`，API 403）、跨版本回滚、Postman/Newman 独立执行、公网认证 / TLS / 限流。
+5. 并发：同一工作区另一个会话正在写 v0.2（账号 / 导入）未提交代码；本轮只显式暂存/提交自己的文件，未碰它们的改动。
+
+四、演示怎么讲
+`python scripts/demo_chain.py`（默认安全）→ 看第 2 段 trace 与分数 → 第 3 段三行同 trace 日志 → 第 4 段 Python 无 score / Java 有 score → 第 5 段错误边界；浏览器再点「载入虚构示例 → 分析匹配 → 查看原文」。讲稿在 `docs/DEFENSE_15MIN.md`。
+
+主要文件：`docs/DEFENSE_15MIN.md`、`docs/DEMO_REQUEST_CHAIN.md`、`docs/JD_TEST_SAMPLE.md`、`scripts/demo_chain.py`、`tests/fixtures/jd-synthetic.txt`、`DELIVERY.md`、`AI_LOG.md`、`CHANGELOG.md`、`README.md`、`docs/{API_CONTRACT,POSTMAN,DEVELOPMENT}.md`。以上文件已在本机显式暂存并提交（未推送、未合并、未触碰并发 v0.2 改动）。
