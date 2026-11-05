@@ -7,6 +7,9 @@
 - 已从文档分支新建 `feature/careerlens-v0.1`，未合并 main；先更新 README 的范围、运行契约和人工门禁。
 - 前端、Node、Java、Python 按用户顺序实现；各阶段实际测试结果将在此追加。
 - 最终交付可运行 v0.1 供用户测试，保持 Draft PR；用户未明确批准前不合并。
+- 用户补充剩余两小时，要求优先代码、后更新 README。当前四层源码按指定顺序已写入。
+- 实际本机验证：`npm run build` 成功；前端 3、BFF 5、Java 8、Python 8 项测试通过。
+- Docker 国内基础镜像正在首次拉取；Compose 配置和全链路尚待验证，不把宿主测试算成 Docker 成功。
 
 ## 1. 启动与环境
 
