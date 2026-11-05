@@ -1,0 +1,46 @@
+# Original assessment materials and local-only personal data.
+/test/
+/private/
+/local-data/
+*.zip
+*.pdf
+
+# Secrets: examples are the only permitted environment files.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+auth.json
+
+# Dependency, build and verification output.
+node_modules/
+dist/
+coverage/
+target/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+*.log
+output/
+test-results/
+playwright-report/
+.playwright-cli/
+
+# Workstation files.
+.idea/
+.vscode/
+.codex/
+.DS_Store
+Thumbs.db
+*.swp
