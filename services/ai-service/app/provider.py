@@ -7,6 +7,7 @@ import httpx
 
 from .models import ModelOutput
 from .extraction import SKILLS, validate_model
+from .streaming import StreamFailure, read_model_response
 
 
 class ModelFailure(Exception):
@@ -27,21 +28,25 @@ async def model_extract(evidence):
         "skills": [{"skillId": key, "name": item["name"], "aliases": item["aliases"]} for key, item in SKILLS.items()],
     }
     payload = {"model": model, "messages": [{"role": "system", "content": json.dumps(prompt, ensure_ascii=False)}, {"role": "user", "content": json.dumps([line.model_dump() for line in evidence], ensure_ascii=False)}], "response_format": {"type": "json_object"}, "temperature": 0, "max_tokens": 4000}
+    style = os.getenv("OPENAI_API_STYLE", "chat")
+    if style not in {"chat", "chat_completions", "responses"}:
+        raise ModelFailure("LLM_INVALID_CONFIG")
+    if style == "responses":
+        payload = {"model": model, "input": payload["messages"], "text": {"format": {"type": "json_object"}}, "max_output_tokens": 4000, "store": False}
+    payload["stream"] = True
+    endpoint = "/responses" if style == "responses" else "/chat/completions"
     try:
-        async with asyncio.timeout(10):
-            async with httpx.AsyncClient(timeout=httpx.Timeout(9, connect=1, pool=1), follow_redirects=False, trust_env=False) as client:
-                async with client.stream("POST", base.rstrip("/") + "/chat/completions", json=payload, headers={"Authorization": "Bearer " + key}) as response:
+        async with asyncio.timeout(30):
+            async with httpx.AsyncClient(timeout=httpx.Timeout(29, connect=3, pool=1), follow_redirects=False, trust_env=False) as client:
+                async with client.stream("POST", base.rstrip("/") + endpoint, json=payload, headers={"Authorization": "Bearer " + key, "Accept": "text/event-stream"}) as response:
                     if response.status_code == 429:
                         raise ModelFailure("LLM_RATE_LIMITED")
                     if response.status_code != 200:
                         raise ModelFailure("LLM_UNAVAILABLE")
-                    data = bytearray()
-                    async for chunk in response.aiter_bytes():
-                        data.extend(chunk)
-                        if len(data) > 262144:
-                            raise ModelFailure("LLM_INVALID_OUTPUT")
-                    content = json.loads(data)["choices"][0]["message"]["content"]
+                    content = await read_model_response(response, style)
                     return validate_model(ModelOutput.model_validate_json(content), evidence)
+    except StreamFailure as error:
+        raise ModelFailure(error.code) from None
     except ModelFailure:
         raise
     except (TimeoutError, httpx.TimeoutException):

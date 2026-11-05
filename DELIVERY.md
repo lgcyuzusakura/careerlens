@@ -1,5 +1,34 @@
 # CareerLens 交付记录
 
+## 最终冻结状态（2026-11-06，优先于以下历史记录）
+
+用户已明确表示“我测试过了，你合并到主分支，然后记得帮我把需要交的东西，比如文件夹直接打包整理好”，随后要求“不用改代码了，没时间了”。停止应用和测试代码改动，仅补交付说明、提交现有代码、核验 CI 和打包。人工验收授权已收到；测试和 CI 绿色仍是先前设定的合并门禁。
+
+### 实际验证
+
+- 四层 `careerlens-{web,bff,java,ai}:v0.2-dev` 镜像均已构建；标准 `docker compose build` 最终成功，Java 另一次离线 Maven 缓存构建也成功。构建过程执行了单测。
+- 实际启动命令：`$env:RELEASE_TAG='v0.2-dev'; docker compose up -d --no-build --force-recreate --wait --wait-timeout 120`。四容器均 healthy，端口 3000/8080/8081/8082，前端 HTTP 200。
+- 单测：Vue 6、BFF 19、Java 27、Python 70 项通过，共 122 项。Vue 生产构建通过。
+- 真实 HTTP：注册、普通用户访问后台 403、充值创建/重复确认、个人余额、TXT 上传经 Java/Python 提取、管理员统计和充值记录均通过。完整 smoke 曾通过（external=degraded）；真实外部调用另有 mode=llm 成功，模型波动可能退化，不能保证每次必为 llm。
+- 原浏览器路径在新登录流程后通过：分析、证据、导出、陈旧结果、取消、超时、1440/390/320 像素。之后追加的账户/管理页面浏览器用例最新失败：`get_by_text('10', exact=True)` 未匹配包含单位的余额文本。该测试尚未修复，不能宣称最新 E2E 全绿。
+- CI 风险：最新 smoke 与浏览器脚本直接读取 `.env`，干净 CI checkout 没有该文件；CI 目前只有环境变量。按停止代码修改要求保留现状，不隐藏此问题。等待实际远端 run，未全绿不得声称通过。
+
+### 启动、部署与回滚
+
+新环境先 `python scripts/configure_runtime.py`，生成本地随机 JWT、管理员、数据库凭据，再 `docker compose up -d --build --wait`。如需用户授权的本机 Codex 中转，使用 `--codex`，只读取当前 provider，不向前端暴露 key。管理员默认 admin，随机密码仅在本机 `.env`。默认模型有明确 opt-in，失败可规则降级。
+
+本机 .env 使用 `RELEASE_TAG=v0.2-dev` 启动；交付包不携带密钥、数据库或真实资料。H2 使用 `careerlens_domain-data` 卷；不执行 down -v 或 prune。保留旧版 `keep-v0.1-baseline` 四镜像和 release 清单。回滚命令：`$env:LEGACY_SMOKE='true'; python scripts/release.py --deploy output/releases/v0.1-baseline.json`，恢复 v0.2 后清除 LEGACY_SMOKE。旧版忽略新增卷，再升级可继续读取。v0.2 跨版本回滚本轮未实际演练；历史 v0.1 演练不代替该结果。正式发布仍应四镜像同 SHA；未把开发标签说成不可变正式发布。
+
+### 架构取舍和已知缺口
+
+四层职责保持：Vue 交互；BFF 校验/编排/超时/错误映射；Java 账户、交易、额度与评分；Python 文件解析和模型适配。H2 适合单实例演示；不保存材料正文。JWT 一小时且无刷新/服务端退出；充值仅模拟、整数分、幂等确认，分成比例只影响新订单快照。文档解析进程五秒终止，PDF 无 OCR。
+
+已知未完成：最新 E2E 定位与干净 CI 的 .env 适配；Postman 尚未补齐新版账户/上传请求；旧答辩稿主要描述 v0.1；真实支付/签名/对账未做；无生产备份恢复、多实例部署、令牌撤销、账号找回和管理审计页面。用户停止修改后不继续扩大实现范围。
+
+### 提交包
+
+整理为 `output/submission/` 下源码 ZIP、Git 历史 bundle、四镜像离线包、SHA-256 校验清单和提交说明。仅包含已审核的 Git 文件与干净镜像；不含 .git 工作目录、.env、key、用户数据库、原始 test/、node_modules 或真实简历。最终文件路径、大小及 CI/合并结果以收尾记录为准。
+
 ## 2026-11-05 23:50 测试与模型流式补充
 
 本节补充账号/上传测试及模型诊断，具体复现、命令和限制见 [模型诊断](docs/MODEL_DIAGNOSTIC.md)。Python 请求已启用 `stream=true`，逐块接收 SSE，最终仍经 schema/证据验证后交 Java 评分；前端继续展示一次完整的已校验结果。
@@ -127,7 +156,7 @@ Java 拥有账户数据库、订单状态、额度与评分；BFF 只做参数�
 - 回滚四层共用一份清单，不单独回切一层；`contractVersion` / `skillDictionaryVersion` 防止四层混搭发布。
 - 未引入 Agent、向量库、ORM 迁移、PDF/OCR 与付费系统；公网开放前必须补认证、TLS、限流。
 
-详见 [开发总纲](docs/DEVELOPMENT.md)、[接口契约](docs/API_CONTRACT.md)、[答辩稿](docs/DEFENSE_15MIN.md)。
+详见 [开发总纲](docs/DEVELOPMENT.md)、[接口契约](docs/API_CONTRACT.md)、[答辩稿](docs/演讲稿.md)。
 
 ### 0.7 15 分钟答辩与请求链演示（本轮新增，已验证）
 

@@ -24,6 +24,9 @@ jobs:
       PIP_INDEX_URL: https://pypi.org/simple
       RELEASE_TAG: ${{ github.event.workflow_run.head_sha }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      JWT_SECRET: synthetic-build-only-signing-material-32-bytes
+      ADMIN_PASSWORD: synthetic-build-only-admin-password
+      DATABASE_PASSWORD: synthetic-build-only-database-password
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:

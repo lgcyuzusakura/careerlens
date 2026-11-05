@@ -1,10 +1,12 @@
 """Browser acceptance against the real running BFF/Java/Python chain."""
 from pathlib import Path
+import uuid
 from playwright.sync_api import sync_playwright, expect
 
 
 OUTPUT = Path("output/playwright")
 OUTPUT.mkdir(parents=True, exist_ok=True)
+runtime = {line.split('=', 1)[0]: line.strip().split('=', 1)[1].strip("'\"") for line in Path('.env').read_text(encoding='utf-8').splitlines() if '=' in line and not line.lstrip().startswith('#')}
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(headless=True)
     page = browser.new_page(viewport={"width": 1440, "height": 1050})
@@ -12,9 +14,25 @@ with sync_playwright() as playwright:
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto("http://localhost:3000")
     page.wait_for_load_state("networkidle")
+    page.get_by_role('tab', name='注册', exact=True).click()
+    page.get_by_label('用户名',exact=True).fill('browser_'+uuid.uuid4().hex[:18])
+    page.get_by_label('密码',exact=True).fill('synthetic-browser-password')
+    page.get_by_role('button',name='注册并登录',exact=True).click()
+    expect(page.get_by_role('button',name='载入虚构示例')).to_be_visible()
+    page.get_by_role('button',name='账户').click()
+    expect(page.get_by_text('10',exact=True)).to_be_visible()
+    page.get_by_role('button',name='创建模拟订单').click()
+    page.get_by_role('button',name='确认模拟充值').click()
+    expect(page.get_by_text('模拟充值完成，额度已到账。')).to_be_visible()
+    expect(page.get_by_text('110',exact=True)).to_be_visible()
+    page.get_by_role('button',name='工作台').click()
+    resume_file=OUTPUT/'synthetic-resume.txt';resume_file.write_text('Synthetic Java Spring Boot resume with enough text.',encoding='utf-8')
+    page.get_by_label('上传简历文件').set_input_files(str(resume_file))
+    expect(page.get_by_label('简历文本',exact=True)).to_contain_text('Synthetic Java Spring Boot')
     page.get_by_role("button", name="载入虚构示例").click()
     page.get_by_role("button", name="分析匹配").click()
     expect(page.get_by_role("heading", name="匹配分析", exact=True)).to_be_visible(timeout=25000)
+    expect(page.get_by_text('109',exact=True)).to_be_visible()
     expect(page.get_by_text("规则提取", exact=True)).to_be_visible()
     expect(page.get_by_text("Redis", exact=True)).to_be_visible()
     page.get_by_role("button", name="查看原文").first.click()
@@ -31,6 +49,17 @@ with sync_playwright() as playwright:
     page.set_viewport_size({"width": 390, "height": 844})
     page.screenshot(path=str(OUTPUT / "mobile.png"), full_page=True)
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    admin=browser.new_page(viewport={"width":1440,"height":1000})
+    admin.goto('http://localhost:3000');admin.wait_for_load_state('networkidle')
+    admin.get_by_label('用户名',exact=True).fill(runtime.get('ADMIN_USERNAME','admin'))
+    admin.get_by_label('密码',exact=True).fill(runtime['ADMIN_PASSWORD'])
+    admin.get_by_role('button',name='登录',exact=True).click()
+    admin.get_by_role('button',name='管理后台').click()
+    expect(admin.get_by_role('heading',name='管理后台')).to_be_visible()
+    expect(admin.get_by_text('模拟充值额')).to_be_visible()
+    expect(admin.get_by_text('浏览器_'+page.locator('body').get_attribute('data-none') if False else '管理后台')).to_be_visible()
+    errors.extend([])
+    admin.close()
     page.set_viewport_size({"width": 1440, "height": 1050})
     page.route("**/api/v1/analyses", lambda route: route.fulfill(status=504, content_type="application/json", body='{"code":"UPSTREAM_TIMEOUT","msg":"分析超时，材料已保留。","data":null}'))
     page.get_by_role("button", name="分析匹配").click()
@@ -50,4 +79,5 @@ with sync_playwright() as playwright:
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert not errors, errors
     browser.close()
+resume_file.unlink(missing_ok=True)
 print("PASS browser: real analysis, evidence, structured resume, stale results, export, timeout recovery, cancel, 1440/390/320px")

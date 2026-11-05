@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import { Agent, request } from 'undici'
 import { analysisSchema, templatesSchema } from './response-schema.js'
+import multipart from '@fastify/multipart'
+import { registerAccountRoutes, documentSchema } from './account-routes.js'
 
 const text = (min, max) => z.string().refine(s => {
   const n = Array.from(s.normalize('NFKC').trim()).length
@@ -16,10 +18,10 @@ const dispatcher = new Agent({ connect: { timeout: 1500 } })
 const messages = { 400: '请检查输入内容。', 404: '请求的资源不存在。', 413: '材料过大，请缩短文本。', 415: '请求必须使用 JSON。', 422: '材料无法分析，请调整文本。', 429: '请求过于频繁，请稍后重试。', 502: '分析服务暂不可用，请稍后重试。', 503: '分析服务尚未就绪。', 504: '分析超时，材料已保留。' }
 const codes = { 400: 'INVALID_INPUT', 404: 'NOT_FOUND', 413: 'PAYLOAD_TOO_LARGE', 415: 'UNSUPPORTED_MEDIA_TYPE', 422: 'UNANALYZABLE_INPUT', 429: 'RATE_LIMITED', 502: 'UPSTREAM_FAILURE', 503: 'SERVICE_UNAVAILABLE', 504: 'UPSTREAM_TIMEOUT' }
 
-export async function domainCall(path, { body, traceId, baseUrl, timeoutMs = 20000 }) {
+export async function domainCall(path, { body, traceId, baseUrl, timeoutMs = 42000, token, method }) {
   const response = await request(new URL(path, baseUrl), {
-    method: body ? 'POST' : 'GET',
-    headers: { 'content-type': 'application/json', 'x-trace-id': traceId },
+    method: method || (body ? 'POST' : 'GET'),
+    headers: { 'content-type': 'application/json', 'x-trace-id': traceId, ...(token ? {authorization:token} : {}) },
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(timeoutMs), headersTimeout: timeoutMs, bodyTimeout: timeoutMs,
     maxRedirections: 0, dispatcher
@@ -33,9 +35,10 @@ export async function domainCall(path, { body, traceId, baseUrl, timeoutMs = 200
   return { status: response.statusCode, payload: JSON.parse(Buffer.concat(chunks).toString('utf8')) }
 }
 
-export function buildApp({ call = domainCall, domainUrl = process.env.DOMAIN_URL || 'http://domain-api:8080', timeoutMs = 20000, rateLimit = 30 } = {}) {
-  const app = Fastify({ bodyLimit: 163840, logger: false, requestTimeout: 23000 })
+export function buildApp({ call = domainCall, domainUrl = process.env.DOMAIN_URL || 'http://domain-api:8080', timeoutMs = 42000, rateLimit = 60 } = {}) {
+  const app = Fastify({ bodyLimit: 163840, logger: false, requestTimeout: 46000 })
   const buckets = new Map()
+  app.register(multipart,{limits:{fileSize:2097152,files:1,fields:1,parts:2}})
   app.addHook('onRequest', async (req, reply) => {
     req.traceId = randomUUID(); req.started = Date.now()
     reply.header('X-Trace-Id', req.traceId).header('Cache-Control', 'no-store').header('X-Content-Type-Options', 'nosniff')
@@ -56,16 +59,17 @@ export function buildApp({ call = domainCall, domainUrl = process.env.DOMAIN_URL
   })
   app.setNotFoundHandler((req, reply) => reply.code(404).send({ code: codes[404], msg: messages[404], data: null }))
   app.get('/healthz', async () => ({ status: 'UP' }))
-  async function forward(path, req, reply, body, kind) {
+  async function forward(path, req, reply, body, kind, method) {
     try {
-      const response = await call(path, { body, traceId: req.traceId, baseUrl: domainUrl, timeoutMs })
+      const response = await call(path, { body, traceId: req.traceId, baseUrl: domainUrl, timeoutMs, token:req.headers.authorization, method })
       const payload = response.payload
       if (response.status !== 200) {
-        const status = [400, 404, 422, 429, 503, 504].includes(response.status) ? response.status : 502
-        return reply.code(status).send({ code: codes[status], msg: messages[status], data: null })
+        const status = [400,401,402,403,404,409,413,415,422,429,503,504].includes(response.status) ? response.status : 502
+        const extra={401:['AUTH_REQUIRED','账号或密码不正确，或登录已过期。'],402:['QUOTA_EXHAUSTED','可用额度不足，请前往账户页。'],403:['FORBIDDEN','需要管理员权限。'],409:['CONFLICT','记录冲突，请检查用户名、额度或重复请求。']}
+        return reply.code(status).send({ code: extra[status]?.[0] || codes[status], msg: extra[status]?.[1] || messages[status], data: null })
       }
       if (!payload || payload.code !== 'OK' || typeof payload.msg !== 'string') throw new Error('Invalid upstream envelope')
-      const parsed = (kind === 'analysis' ? analysisSchema : templatesSchema).safeParse(payload.data)
+      const parsed = (typeof kind==='string' ? (kind === 'analysis' ? analysisSchema : templatesSchema) : kind).safeParse(payload.data)
       if (!parsed.success) throw new Error('Invalid upstream contract')
       return { code: 'OK', msg: payload.msg, data: parsed.data }
     } catch (error) {
@@ -78,6 +82,16 @@ export function buildApp({ call = domainCall, domainUrl = process.env.DOMAIN_URL
     catch { return reply.code(503).send({ status: 'DOWN' }) }
   })
   app.get('/api/v1/job-templates', (req, reply) => forward('/api/v1/job-templates', req, reply, undefined, 'templates'))
+  registerAccountRoutes(app,forward)
+  app.post('/api/v1/documents/text',{bodyLimit:2850000},async (req,reply)=>{
+    if(!req.headers.authorization?.startsWith('Bearer ')) return reply.code(401).send({code:'AUTH_REQUIRED',msg:'请登录后上传。',data:null})
+    const file=await req.file()
+    if(!file || !/\.(txt|md|pdf|docx)$/i.test(file.filename) || file.filename.length>160) return reply.code(400).send({code:'INVALID_INPUT',msg:'支持 MD、TXT、PDF、DOCX，最多 2 MiB。',data:null})
+    const content=await file.toBuffer()
+    const target=file.fields.target?.value
+    if(!['resume','jd'].includes(target)) return reply.code(400).send({code:'INVALID_INPUT',msg:'请指定简历或岗位材料。',data:null})
+    return forward('/api/v1/documents/text',req,reply,{filename:file.filename,contentBase64:content.toString('base64'),target},documentSchema)
+  })
   app.post('/api/v1/analyses', (req, reply) => {
     const parsed = inputSchema.safeParse(req.body)
     if (!parsed.success) return reply.code(400).send({ code: codes[400], msg: messages[400], data: { errors: parsed.error.issues.map(x => ({ field: String(x.path[0] || 'body'), msg: x.code === 'unrecognized_keys' ? '包含不支持的字段。' : '字段类型或长度不符合要求。' })) } })

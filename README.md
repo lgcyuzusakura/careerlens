@@ -1,4 +1,14 @@
-# CareerLens v0.1
+# CareerLens v0.2
+
+当前交付包含注册登录、用户/管理员视图、MD/TXT/PDF/DOCX 上传、额度与模拟充值、分成配置和模型中转适配。四层 Docker 已在本机健康启动。最终验证事实及未完成项以 [DELIVERY.md](DELIVERY.md) 顶部为准。
+
+```powershell
+python scripts/configure_runtime.py
+$env:RELEASE_TAG='v0.2-dev'
+docker compose up -d --build --force-recreate --wait --wait-timeout 120
+```
+
+浏览器访问 http://localhost:3000 注册普通账号；管理员用户名和随机密码在本机 `.env` 中查看。复用本机 Codex 中转配置时运行 `python scripts/configure_runtime.py --codex`；密钥仅注入 Python。充值为明确标识的模拟流程，无真实收款。新环境必须先生成 `.env`；最终压缩包不含此文件。
 
 面向高校学生的简历与岗位分析工作台：输入简历文本和 JD，输出结构化简历、技能归一结果、命中证据、待补充证据及可解释的匹配分数。
 
@@ -95,7 +105,7 @@ v0.1 实现分支 `feature/careerlens-v0.1` 已通过 PR #2 合并进 main（`30
 - [参考调研](docs/REFERENCES.md)：已读取的公开参考、借鉴范围与许可证边界。
 - [Postman 调试说明](docs/POSTMAN.md)：导入集合、四个端口和合成请求；等价 HTTP 请求已跑通，Postman/Newman 独立执行仍未记录。
 - [交付说明](DELIVERY.md)：实际执行记录、启动、部署、回滚、缺口和演示路径。
-- [15 分钟答辩稿](docs/DEFENSE_15MIN.md)：逐字稿、时间分配、预设问答与兜底话术。
+- [15 分钟答辩稿](docs/演讲稿.md)：逐字稿、时间分配、预设问答与兜底话术。
 - [请求链演示手册](docs/DEMO_REQUEST_CHAIN.md)：同一 trace 的六步演示与 curl 等价命令。
 - [测试 JD 来源与合成稿](docs/JD_TEST_SAMPLE.md)：公开来源、访问日期、脱敏摘录与虚构测试稿。
 - [会话记录](AI_LOG.md)：按日期复制双方对话原文，敏感值脱敏，并附每轮文件变更。

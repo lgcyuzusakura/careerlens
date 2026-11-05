@@ -1,6 +1,6 @@
 # 请求链演示手册（同一 trace / 15 分钟答辩配套）
 
-配套 [15 分钟答辩稿](DEFENSE_15MIN.md) 与 `scripts/demo_chain.py`。日期：2026-11-05。所有材料均为合成、明确虚构，见 [JD_TEST_SAMPLE.md](JD_TEST_SAMPLE.md)。
+配套 [15 分钟答辩稿](演讲稿.md) 与 `scripts/demo_chain.py`。日期：2026-11-05。所有材料均为合成、明确虚构，见 [JD_TEST_SAMPLE.md](JD_TEST_SAMPLE.md)。
 
 ## 1. 链路与端口
 
