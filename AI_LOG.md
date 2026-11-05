@@ -615,6 +615,28 @@ Git 网络重试成功，`main` 基线已推送。我会再给文档分支加一
 
 我会提交并推送文档分支、建立待审 PR，然后核对远端文档 CI 的实际结果。
 
+### AI
+
+[文档 PR #1](https://github.com/lgcyuzusakura/careerlens/pull/1) 已建立并保持 Draft。远端 push 和 PR 两次文档 CI 都已通过：[PR 检查记录](https://github.com/lgcyuzusakura/careerlens/actions/runs/42037952724)。
+
+这只是文档验证通过，应用测试和 Docker 验证尚未开始。我会把实际链接补进 `DELIVERY.md`，再检查仓库能否启用主分支保护；PR 不会合并。
+
+### AI
+
+主分支保护配置被 GitHub 拒绝，返回 403：当前套餐不支持私有仓库分支保护。我会保留仓库私有，并在交付记录中注明这个平台限制。
+
+PR 继续保持 Draft；后续仍须单测、集成测试、CI 和你的人工审核全部通过，才允许合并。
+
+### AI：本轮交付答复
+
+已创建[私有仓库](https://github.com/lgcyuzusakura/careerlens)，文档在 [Draft PR #1](https://github.com/lgcyuzusakura/careerlens/pull/1)，未合并。
+
+- [开发文档](/D:/test-main/docs/DEVELOPMENT.md)：四层架构、代码编排、Docker 国内源、固定端口、测试与回滚。
+- [接口契约](/D:/test-main/docs/API_CONTRACT.md)与 [Postman 集合](/D:/test-main/postman/CareerLens.postman_collection.json)：统一 `{ code, msg, data }`。
+- [AI_LOG](/D:/test-main/AI_LOG.md) 已按日期收录对话原文和文件变更，敏感值脱敏；[DELIVERY](/D:/test-main/DELIVERY.md) 已更新。
+
+文档 CI 已通过；应用和 Docker 尚未实现。后续须测试、CI 和你本人审核全部通过才合并。当前 GitHub 套餐不支持私有库分支保护，限制已记录。
+
 ## 2026-11-05 · 本轮文件变更
 
 | 文件 | 变更 |
@@ -643,7 +665,9 @@ Git 网络重试成功，`main` 基线已推送。我会再给文档分支加一
 - 参考读取：devprep-ai ADR、简历文档、Compose、CI 和两个相似项目 README 已读取。raw GitHub 请求等待被终止，Contents API 带时限重试成功。
 - GitHub：当前环境重新发起设备授权后，CLI 确认登录 lgcyuzusakura。没有把授权原值写入文件。
 - Git：main 基线提交 a954c7f，只含两个忽略文件；创建 feature/careerlens-plan。使用公开账号和 noreply 作者地址，不输出或复用私人邮箱。
-- 远端：私有仓库已创建；前两次 HTTPS Git push 分别 Connection was reset 与连接超时，随后 HTTP/1.1 重试成功，main 已推送。feature 文档分支仍待提交和推送。
-- 未执行：应用实现、单元/接口/浏览器测试、Compose 构建启动、真实模型、远端 CI 与回滚演练。
+- 远端：私有仓库已创建；前两次 HTTPS Git push 分别 Connection was reset 与连接超时，随后 HTTP/1.1 重试成功，main 已推送。feature 文档提交 9dbd265 已推送，Draft PR #1 已创建。
+- 文档 CI：9dbd265 的 push run 42037841838 与 PR run 42037952724 实际 success；PR 检查名 Documentation checks。后续事实记录更新仍会触发新 run，以 PR 当前 commit 状态为准。
+- 平台限制：配置 main 保护的 API 实际返回 403，要求升级 GitHub 套餐或公开仓库；保留私有，未生效，不声称保护成功。人工审核仍是合并必要条件。
+- 未执行：应用实现、应用单元/接口/浏览器测试、Compose 构建启动、真实模型、应用远端 CI 与回滚演练。
 - 工具/skill：Codex（GPT-6）、PowerShell、Git、GitHub CLI、Docker CLI、公开 GitHub REST API；使用用户五项 skill 与 request-chain。读取 computer-use 指引评估认证问题，没有通过 UI 自动化填写认证或读取凭据。
 - 只读 review：读取适用 AGENTS 与本轮完整 diff，结论 No findings；范围为文档/契约/Postman/检查脚本/workflow，未执行应用测试、Compose、浏览器或回滚。

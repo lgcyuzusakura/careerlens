@@ -51,7 +51,8 @@ docker compose up -d --build
 | 本项目应用单元/契约/E2E | 未执行，尚无应用代码 |
 | `docker compose config -q` / 构建 / 启动 | 未执行，尚无 Compose 配置 |
 | 真实模型请求 | 未执行，尚无运行时配置 |
-| 远端 CI | 未执行，无 run 链接 |
+| 远端文档 CI | 9dbd265 的 push 与 PR 两次 run 均 success，见第 7 节；不代表应用测试通过 |
+| main 分支保护 API | 实际 PUT 返回 403，当前套餐不支持私有仓库分支保护；保留私有，不宣称平台强制门禁已生效 |
 | 回滚演练 | 未执行，无可用版本镜像 |
 
 后续每个增量在此补充命令、结果、commit SHA、CI run、release digest；失败也保留。
@@ -84,7 +85,8 @@ MVP 采用无持久化分析，不涉及数据库迁移；配置和契约仍需�
 | 优先级 | 缺口 | 完成条件 |
 | --- | --- | --- |
 | P0 | 应用、测试、Docker、CI 尚未实现 | 按开发总纲落实并提供实际验证 |
-| P1 | 文档分支远端 PR 和人工审核尚未完成 | 推送 feature 分支、提交 PR，等待用户人工审核 |
+| P1 | 应用与文档均未获用户人工审核 | 文档已推送并开 Draft PR #1；应用完成并全绿后提交人工审核，批准前不合并 |
+| P1 | 私有仓库 main 无平台强制保护 | GitHub 返回套餐限制；按项目流程禁止自动合并，后续具备套餐/组织能力再启用平台门禁，不改为公开 |
 | P1 | 无真实模型调用证据 | 安全配置运行时 key 后记录脱敏请求结果与模式 |
 | P1 | 无镜像基线或回滚演练 | 两个可用版本、release 清单与回切记录 |
 | P1 | MVP 计划无用户认证 | 仅绑定本机；公网部署前实现认证、TLS、限流 |
@@ -106,9 +108,12 @@ MVP 采用无持久化分析，不涉及数据库迁移；配置和契约仍需�
 - 远端：[lgcyuzusakura/careerlens](https://github.com/lgcyuzusakura/careerlens)，已通过 CLI/API 确认私有。origin 已配置。
 - 初始仓库为 master unborn。现已建立 main 隐私基线 a954c7f 并推送；当前文档开发分支为 `feature/careerlens-plan`。这不构成正式考试计时开始。
 - 实现分支后续为 `feature/careerlens-mvp`；小增量提交，PR -> 单测/集成测试/CI -> 用户本人明确审核通过 -> 才能合并。
-- 已新增文档检查 `.github/workflows/docs.yml`，执行 `python3 scripts/check_docs.py`；目前尚未有 run 结果。应用 CI 计划路径 `.github/workflows/ci.yml`、CD 路径 `.github/workflows/release.yml` 尚未生成。
+- 文档分支已提交并推送 9dbd265：[Draft PR #1](https://github.com/lgcyuzusakura/careerlens/pull/1)，保持 OPEN / Draft，未合并。main 仍是 a954c7f 隐私基线。
+- 文档检查 `.github/workflows/docs.yml` 执行 `python3 scripts/check_docs.py`；9dbd265 的 [push run](https://github.com/lgcyuzusakura/careerlens/actions/runs/42037841838) 和 [PR run](https://github.com/lgcyuzusakura/careerlens/actions/runs/42037952724) 均 success。只验证文档；后续文档状态更新会再次触发，以 PR 最新 commit 检查为准。
+- 应用 CI 计划路径 `.github/workflows/ci.yml`、CD 路径 `.github/workflows/release.yml` 尚未生成，应用单测/集成/Docker 均未执行。
 - 文档 CI runner 为 `ubuntu-24.04`；checkout v4 的 SHA 由公开 API 核验并固定为 `11d5960a326750d5838078e36cf38b85af677262`，权限仅 `contents: read`，checkout 不保留凭据。应用 CI 也将采用固定 SHA；release job 单独授予 `packages: write`，不让 PR 使用发布凭据。
-- 分支保护、PR 链接、检查名、run 链接、镜像 registry 与 digest：均未配置，不伪造。
+- 文档检查名 `Documentation checks`。实际尝试为 main 配置必需检查与 PR 门禁，GitHub 返回 HTTP 403：需升级套餐或公开仓库。保持私有，没有生效的分支保护；人工审核要求由项目约束和 Draft PR 状态执行，不声称已有平台级强制审批。
+- 镜像 registry 权限、release 与 digest 尚未验证；没有删除任何已有 Docker 镜像。
 - 首次认证未完成已解决；Git HTTPS 前两次断连，HTTP/1.1 重试已推送 main，不需要切换 Gitee。
 
 ## 8. 本轮变更与门禁
@@ -117,6 +122,7 @@ MVP 采用无持久化分析，不涉及数据库迁移；配置和契约仍需�
 - 准备详细开发、API、前端设计和公开参考文档。
 - 按用户新要求补充国内源策略、固定四端口、code/msg/data 信封、Postman 契约集合，以及“用户本人审核通过才能合并”门禁。
 - AI_LOG 改为按日期直接复制双方对话，敏感值脱敏并附文件变更；文档静态检查、Git 历史与认证状态在本轮完成时更新。
+- 本轮文档检查与只读 review 已完成，feature 已推送，Draft PR 已创建；文档 CI 有实际绿色 run。原始题目/简历资料与授权码未提交。
 - [ ] 应用单测与契约测试
 - [ ] Compose 配置、构建、健康检查
 - [ ] 浏览器真实链路和移动端截图
